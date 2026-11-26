@@ -110,6 +110,8 @@ html[data-tema=morkt] .knapp-lank{color:#8DB5FF}
 .hytt-etikett{display:flex;align-items:center;gap:10px;font:600 16px/1 var(--rubrik);letter-spacing:3px;color:#A3ACB9}
 .prick{width:10px;height:10px;border-radius:50%;background:var(--gul)}
 .hytt-knapp{width:48px;height:48px;border-radius:14px;background:#161B23;border:1px solid #2A313C;color:#C7CDD6;display:flex;align-items:center;justify-content:center}
+.hytt-tillbaka{display:flex;align-items:center;gap:8px;min-height:52px;padding:0 18px;border:0;border-radius:16px;background:var(--gul);color:#111;font:700 20px/1 var(--rubrik);letter-spacing:.5px}
+.hytt-tillbaka svg{width:24px;height:24px}
 .hytt-kort{background:#141922;border:1px solid #262D38;border-radius:24px;padding:18px 20px;display:flex;flex-direction:column;gap:12px}
 .hytt-kort .rad{display:flex;justify-content:space-between;font-size:15px;letter-spacing:2px;color:#A3ACB9}
 .jattesiffra{font:800 clamp(72px,26vw,120px)/.95 var(--rubrik);font-variant-numeric:tabular-nums}
