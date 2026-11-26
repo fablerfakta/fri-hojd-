@@ -12,11 +12,9 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Fri höjd">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
-<link rel="stylesheet" href="style.css?v=12">
+<link rel="stylesheet" href="lib/fonts/fonts.css">
+<link rel="stylesheet" href="lib/leaflet/leaflet.css">
+<link rel="stylesheet" href="style.css?v=13">
 </head>
 <body>
 
@@ -273,8 +271,8 @@
       <h3>Karta och teknik</h3>
       <ul>
         <li><b>Bakgrundskarta</b> – © OpenStreetMaps bidragsgivare (ODbL). Mörk karta och reservkarta: © CARTO.</li>
-        <li><b>Kartvisning</b> – Leaflet (öppen källkod, BSD-licens).</li>
-        <li><b>Typsnitt</b> – Barlow och Barlow Condensed via Google Fonts (SIL Open Font License).</li>
+        <li><b>Kartvisning</b> – Leaflet 1.9.4 (öppen källkod, BSD-licens), inbyggd i appen.</li>
+        <li><b>Typsnitt</b> – Barlow och Barlow Condensed (SIL Open Font License), inbyggda i appen.</li>
       </ul>
 
       <h3>Kontrollera alltid</h3>
@@ -282,7 +280,8 @@
         <li>Lokala trafikföreskrifter: <a href="https://www.stfs.se" target="_blank" rel="noopener">Svensk trafikföreskriftssamling (STFS)</a> – www.stfs.se</li>
         <li>Vägdata på karta: <a href="https://nvdbpakarta.trafikverket.se/map" target="_blank" rel="noopener">NVDB på karta (Trafikverket)</a></li>
       </ul>
-      <p class="muted liten-text">Inga personuppgifter skickas någonstans. Fordon och inställningar sparas bara i din telefon. Din position används bara i appen för att visa hinder i närheten.</p>
+      <p class="muted liten-text">Inga personuppgifter skickas till oss. Fordon och inställningar sparas bara i din telefon, och din position används bara i appen. Kartbilderna hämtas från OpenStreetMap och CARTO.</p>
+      <p><a href="integritet.html" target="_blank" rel="noopener">Integritetspolicy / Privacy policy</a></p>
       <p class="muted liten-text">Kontakt: fablerfakta@proton.me</p>
     </details>
   </form>
@@ -310,8 +309,8 @@
   </form>
 </dialog>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-<script src="vikt.js?v=12"></script>
-<script src="app.js?v=12"></script>
+<script src="lib/leaflet/leaflet.js"></script>
+<script src="vikt.js?v=13"></script>
+<script src="app.js?v=13"></script>
 </body>
 </html>

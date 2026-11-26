@@ -1,6 +1,6 @@
 // Fri höjd – enkel offline-cache för appens egna filer (kartbilderna kräver nät)
-const CACHE = 'frihojd-v13';
-const FILER = ['./', 'index.html', 'style.css', 'app.js', 'vikt.js', 'data/hinder.json', 'data/bk.json', 'data/adr.json', 'manifest.webmanifest', 'icon.svg', 'icon-192.png', 'icon-512.png'];
+const CACHE = 'frihojd-v14';
+const FILER = ['./', 'index.html', 'style.css', 'app.js', 'vikt.js', 'data/hinder.json', 'data/bk.json', 'data/adr.json', 'manifest.webmanifest', 'icon.svg', 'icon-192.png', 'icon-512.png', 'integritet.html', 'lib/leaflet/leaflet.js', 'lib/leaflet/leaflet.css', 'lib/fonts/fonts.css', 'lib/fonts/Barlow-Regular.woff', 'lib/fonts/Barlow-Medium.woff', 'lib/fonts/Barlow-SemiBold.woff', 'lib/fonts/Barlow-Bold.woff', 'lib/fonts/BarlowCondensed-SemiBold.woff', 'lib/fonts/BarlowCondensed-Bold.woff', 'lib/fonts/BarlowCondensed-ExtraBold.woff'];
 self.addEventListener('install', (e) => e.waitUntil(caches.open(CACHE).then((c) => c.addAll(FILER)).then(() => self.skipWaiting())));
 self.addEventListener('activate', (e) => e.waitUntil(caches.keys().then((k) => Promise.all(k.filter((n) => n !== CACHE).map((n) => caches.delete(n)))).then(() => self.clients.claim())));
 self.addEventListener('fetch', (e) => {

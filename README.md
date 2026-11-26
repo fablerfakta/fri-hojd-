@@ -43,3 +43,7 @@ Vägdatan är öppen (CC0). Kartan: © OpenStreetMap, © CARTO.
 
 ## Publicera
 Statisk sajt – fungerar direkt på GitHub Pages. Kan installeras på hemskärmen (PWA).
+
+## Integritet och licenser
+- Integritetspolicy: `integritet.html`
+- Leaflet 1.9.4 (BSD-2, `lib/leaflet/LICENSE`) och Barlow-typsnitten (SIL OFL 1.1, `lib/fonts/OFL.txt`) ligger i appen – inga anrop till unpkg eller Google Fonts.
