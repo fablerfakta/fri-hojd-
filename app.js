@@ -495,7 +495,9 @@ function ritaLista() {
 /* ---------- Vyer ---------- */
 let vy = 'karta';
 function visaVy(ny) {
-  if (ny === 'install') { oppnaInst(); return; }
+  if (ny === 'install') { if ($('dlgInst').open) { $('dlgInst').close(); return; } oppnaInst(); return; }
+  if ($('dlgInst').open) $('dlgInst').close();
+  if (hyttAktiv) stangHytt(true);
   vy = ny;
   $('vyKarta').hidden = ny !== 'karta';
   $('vyLista').hidden = ny !== 'lista';
@@ -869,7 +871,8 @@ function oppnaInst() {
   $('dataInfo').textContent = dataText();
   $('bkDataInfo').textContent = bkDataText();
   $('adrDataInfo').textContent = adrDataText();
-  $('dlgInst').showModal();
+  $('dlgInst').show();
+  document.querySelectorAll('.flik').forEach((f) => f.classList.toggle('aktiv', f.dataset.vy === 'install'));
 }
 function allaRitas() { visaHojd(); ritaPunkter(); ritaBk(); ritaAdr(); if (vy === 'lista') ritaLista(); ritaHytt(); $('exempelBanner').hidden = !data.exempel && !bkData.exempel && !(F().adr && adrData.exempel); }
 function lasHojd(el) {
@@ -928,6 +931,10 @@ $('btnStandardData').addEventListener('click', async () => {
 });
 
 /* ---------- Knappar ---------- */
+$('dlgInst').addEventListener('close', () => {
+  document.querySelectorAll('.flik').forEach((f) => f.classList.toggle('aktiv', f.dataset.vy === vy && !hyttAktiv));
+});
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && $('dlgInst').open) $('dlgInst').close(); });
 document.querySelectorAll('.flik').forEach((f) => f.addEventListener('click', () => visaVy(f.dataset.vy)));
 document.querySelectorAll('.chip').forEach((c) => c.addEventListener('click', () => {
   filter = c.dataset.filter;

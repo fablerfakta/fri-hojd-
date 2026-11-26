@@ -7,7 +7,7 @@
   --bg:#F4F5F2; --yta:#fff; --ink:#141A22; --muted:#4D5562; --linje:#E3E6EA;
   --rubrik:'Barlow Condensed',system-ui,sans-serif;
   --text:'Barlow',system-ui,sans-serif;
-  --safe-top:env(safe-area-inset-top,0px); --safe-bot:env(safe-area-inset-bottom,0px);
+  --safe-top:env(safe-area-inset-top,0px); --safe-bot:env(safe-area-inset-bottom,0px); --navh:calc(66px + var(--safe-bot));
 }
 html[data-tema=morkt]{
   --bg:#0F1318; --yta:#181D25; --ink:#E9ECF1; --muted:#A3ACB9; --linje:#2A313C;
@@ -38,7 +38,7 @@ main{flex:1;position:relative;min-height:0}
 .fab-kor{right:auto;left:14px;padding:0 18px;background:var(--svart);color:var(--gul);font:700 19px/1 var(--rubrik);letter-spacing:.5px}
 html[data-tema=morkt] .fab-kor{background:var(--gul);color:var(--svart)}
 
-.flikar{display:flex;background:var(--svart);padding:6px 0 calc(8px + var(--safe-bot))}
+.flikar{display:flex;position:relative;z-index:2100;min-height:var(--navh);box-sizing:border-box;background:var(--svart);padding:6px 0 calc(8px + var(--safe-bot))}
 .flik{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;min-height:52px;border:0;background:none;color:#AEB4BD;font:700 15px/1.1 var(--rubrik);letter-spacing:.5px}
 .flik.aktiv{color:var(--gul)}
 
@@ -79,7 +79,8 @@ html[data-tema=morkt] .leaflet-control-attribution{background:rgba(15,19,24,.8);
 html[data-tema=morkt] .leaflet-control-attribution a{color:#8DB5FF}
 
 /* ---------- Dialoger ---------- */
-.ark{border:0;padding:0;width:min(520px,100%);max-height:92vh;margin:auto auto 0;border-radius:22px 22px 0 0;background:var(--yta);color:var(--ink)}
+.ark{border:0;padding:0;width:min(520px,100%);max-height:calc(100vh - var(--navh) - 40px);margin:auto auto var(--navh);border-radius:22px 22px 0 0;background:var(--yta);color:var(--ink)}
+.ark#dlgInst{position:fixed;left:0;right:0;top:auto;bottom:var(--navh);margin:0 auto;z-index:2050;max-height:calc(100% - var(--navh) - 24px);overflow-y:auto;box-shadow:0 -6px 30px rgba(0,0,0,.35)}
 .ark::backdrop{background:rgba(0,0,0,.45)}
 .ark form{padding:18px 18px calc(20px + var(--safe-bot));display:flex;flex-direction:column;gap:14px}
 .ark h2{margin:0;font:700 26px/1.1 var(--rubrik)}
@@ -105,7 +106,7 @@ html[data-tema=morkt] .knapp-lank{color:#8DB5FF}
 .liten-text{font-size:13px;margin:0}
 
 /* ---------- Hyttläge ---------- */
-#hytt{position:fixed;inset:0;z-index:2000;background:#0B0E13;color:#E9ECF1;font-family:var(--rubrik);display:flex;flex-direction:column;gap:14px;padding:calc(14px + var(--safe-top)) 18px calc(16px + var(--safe-bot));overflow-y:auto}
+#hytt{position:fixed;top:0;left:0;right:0;bottom:var(--navh);z-index:2000;background:#0B0E13;color:#E9ECF1;font-family:var(--rubrik);display:flex;flex-direction:column;gap:14px;padding:calc(14px + var(--safe-top)) 18px 16px;overflow-y:auto}
 .hytt-top{display:flex;align-items:center;justify-content:space-between}
 .hytt-etikett{display:flex;align-items:center;gap:10px;font:600 16px/1 var(--rubrik);letter-spacing:3px;color:#A3ACB9}
 .prick{width:10px;height:10px;border-radius:50%;background:var(--gul)}
