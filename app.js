@@ -494,14 +494,23 @@ function ritaLista() {
 
 /* ---------- Vyer ---------- */
 let vy = 'karta';
+function markeraFlik() {
+  const aktiv = $('dlgInst').open ? 'install' : hyttAktiv ? 'kor' : vy;
+  document.querySelectorAll('.flik').forEach((f) => f.classList.toggle('aktiv', f.dataset.vy === aktiv));
+}
 function visaVy(ny) {
+  if (ny === 'kor') {
+    if ($('dlgInst').open) $('dlgInst').close();
+    if (!hyttAktiv) { stangdManuellt = false; oppnaHytt(false); }
+    markeraFlik(); return;
+  }
   if (ny === 'install') { if ($('dlgInst').open) { $('dlgInst').close(); return; } oppnaInst(); return; }
   if ($('dlgInst').open) $('dlgInst').close();
   if (hyttAktiv) stangHytt(true);
   vy = ny;
   $('vyKarta').hidden = ny !== 'karta';
   $('vyLista').hidden = ny !== 'lista';
-  document.querySelectorAll('.flik').forEach((f) => f.classList.toggle('aktiv', f.dataset.vy === ny));
+  markeraFlik();
   if (ny === 'karta' && karta) setTimeout(() => karta.invalidateSize(), 0);
   if (ny === 'lista') ritaLista();
 }
@@ -510,6 +519,7 @@ function visaVy(ny) {
 async function oppnaHytt(auto) {
   hyttAktiv = true; hyttAuto = auto;
   $('hytt').hidden = false;
+  markeraFlik();
   document.querySelector('meta[name=theme-color]').content = '#0B0E13';
   try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } catch (e) {}
   ritaHytt();
@@ -518,6 +528,7 @@ function stangHytt(manuellt) {
   hyttAktiv = false;
   if (manuellt && hyttAuto) stangdManuellt = true;
   $('hytt').hidden = true;
+  markeraFlik();
   uppdateraTema();
   document.querySelector('meta[name=theme-color]').content = morkt ? '#0F1318' : '#FFD43B';
   try { if (wakeLock) wakeLock.release(); } catch (e) {}
@@ -872,7 +883,7 @@ function oppnaInst() {
   $('bkDataInfo').textContent = bkDataText();
   $('adrDataInfo').textContent = adrDataText();
   $('dlgInst').show();
-  document.querySelectorAll('.flik').forEach((f) => f.classList.toggle('aktiv', f.dataset.vy === 'install'));
+  markeraFlik();
 }
 function allaRitas() { visaHojd(); ritaPunkter(); ritaBk(); ritaAdr(); if (vy === 'lista') ritaLista(); ritaHytt(); $('exempelBanner').hidden = !data.exempel && !bkData.exempel && !(F().adr && adrData.exempel); }
 function lasHojd(el) {
@@ -932,7 +943,7 @@ $('btnStandardData').addEventListener('click', async () => {
 
 /* ---------- Knappar ---------- */
 $('dlgInst').addEventListener('close', () => {
-  document.querySelectorAll('.flik').forEach((f) => f.classList.toggle('aktiv', f.dataset.vy === vy && !hyttAktiv));
+  markeraFlik();
 });
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && $('dlgInst').open) $('dlgInst').close(); });
 document.querySelectorAll('.flik').forEach((f) => f.addEventListener('click', () => visaVy(f.dataset.vy)));
@@ -948,8 +959,6 @@ $('btnLagerBk').addEventListener('click', () => vaxlaLager('bk'));
 $('btnLagerAdr').addEventListener('click', () => vaxlaLager('adr'));
 ritaLagerknappar();
 $('btnCentrera').addEventListener('click', () => { if (pos && karta) karta.setView([pos.lat, pos.lon], 14); else startaGps(); });
-$('btnKor').addEventListener('click', () => { stangdManuellt = false; oppnaHytt(false); });
-$('btnStangHytt').addEventListener('click', () => stangHytt(true));
 $('btnIgnorera').addEventListener('click', () => { if (primar) { ignorerade.add(primar.h.id); ritaHytt(); } });
 document.addEventListener('visibilitychange', async () => {
   if (document.visibilityState === 'visible' && hyttAktiv && 'wakeLock' in navigator) {
