@@ -974,6 +974,6 @@ document.addEventListener('visibilitychange', async () => {
     }, { once: true });
   } else startaGps();
   setInterval(uppdateraTema, 5 * 60 * 1000);
-  if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
+  if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).catch(() => {});
 })();
 }
