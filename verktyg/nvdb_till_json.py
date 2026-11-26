@@ -3,7 +3,12 @@
 Gör om Trafikverkets höjdhinder (NVDB, från Lastkajen) till data/hinder.json för appen Fri höjd.
 
 Användning:
-    python3 nvdb_till_json.py <fil.gpkg eller fil.geojson> [ut.json]
+    python3 nvdb_till_json.py <fil.gpkg eller fil.geojson> [data/hinder.json]
+    python3 nvdb_till_json.py --bk <fil.gpkg eller fil.geojson> [data/bk.json]
+
+--bk gör om vägsträckor med bärighetsklass (företeelsen "Bärighet") till data/bk.json.
+Vägar med BK1 hoppas över, eftersom allmän väg är BK1 om inget annat sägs.
+Lägg till --alla för att ta med BK1 också.
 
 - Hämta datan gratis på https://lastkajen.trafikverket.se (skapa konto, välj vägdata
   med företeelsen "Höjdhinder upp till 4,5 meter", format GeoPackage eller GeoJSON).
@@ -114,6 +119,127 @@ def las_gpkg(sokvag):
                 yield p, xy
 
 
+# ---------- Linjer (för bärighet) ----------
+def las_wkb_linjer(b, o=0):
+    """Returnerar (lista med linjer [[(x, y), ...]], ny offset)."""
+    end = "<" if b[o] == 1 else ">"
+    typ = struct.unpack_from(end + "I", b, o + 1)[0]
+    iso = (typ & 0x0FFFFFFF) // 1000
+    har_z = bool(typ & 0x80000000) or iso in (1, 3)
+    har_m = bool(typ & 0x40000000) or iso in (2, 3)
+    bas = (typ & 0x0FFFFFFF) % 1000
+    dim = 2 + har_z + har_m
+    o += 5
+    if bas == 1:
+        x, y = struct.unpack_from(end + "dd", b, o)
+        return [[(x, y)]], o + 8 * dim
+    if bas == 2:
+        n = struct.unpack_from(end + "I", b, o)[0]; o += 4
+        pts = [struct.unpack_from(end + "dd", b, o + i * 8 * dim) for i in range(n)]
+        return [pts], o + n * 8 * dim
+    if bas == 3:
+        nr = struct.unpack_from(end + "I", b, o)[0]; o += 4; ut = []
+        for _ in range(nr):
+            n = struct.unpack_from(end + "I", b, o)[0]; o += 4
+            ut.append([struct.unpack_from(end + "dd", b, o + i * 8 * dim) for i in range(n)]); o += n * 8 * dim
+        return ut, o
+    if bas in (4, 5, 6, 7):
+        n = struct.unpack_from(end + "I", b, o)[0]; o += 4; ut = []
+        for _ in range(n):
+            delar, o = las_wkb_linjer(b, o); ut.extend(delar)
+        return ut, o
+    raise ValueError(f"Okänd geometrityp {typ}")
+
+
+def gpkg_linjer(blob):
+    if blob is None or blob[:2] != b"GP" or blob[3] & 0x10:
+        return []
+    env = {0: 0, 1: 32, 2: 48, 3: 48, 4: 64}.get((blob[3] >> 1) & 0x07, 0)
+    return las_wkb_linjer(blob, 8 + env)[0]
+
+
+def forenkla(pts, tol):
+    """Douglas–Peucker."""
+    if len(pts) < 3:
+        return pts
+    (x1, y1), (x2, y2) = pts[0], pts[-1]
+    dx, dy = x2 - x1, y2 - y1; l = math.hypot(dx, dy) or 1e-12
+    imax, dmax = 0, -1
+    for i in range(1, len(pts) - 1):
+        d = abs(dy * pts[i][0] - dx * pts[i][1] + x2 * y1 - y2 * x1) / l
+        if d > dmax:
+            imax, dmax = i, d
+    if dmax <= tol:
+        return [pts[0], pts[-1]]
+    return forenkla(pts[:imax + 1], tol)[:-1] + forenkla(pts[imax:], tol)
+
+
+BK = re.compile(r"b[aä]righet|^bk$", re.I)
+TJAL = re.compile(r"tj[aä]l", re.I)
+
+
+def bk_varde(v):
+    m = re.search(r"[1-4]", str(v if v is not None else ""))
+    return int(m.group()) if m else None
+
+
+def bk_kalla(sokvag):
+    if sokvag.lower().endswith(".gpkg"):
+        db = sqlite3.connect(sokvag)
+        tabeller = [r[0] for r in db.execute("select table_name from gpkg_contents where data_type='features'")]
+        for tab in [t for t in tabeller if re.search(r"b[aä]righet", t, re.I)] or tabeller:
+            gk = db.execute("select column_name from gpkg_geometry_columns where table_name=?", (tab,)).fetchone()
+            if not gk:
+                continue
+            cur = db.execute(f'select * from "{tab}"')
+            kol = [d[0] for d in cur.description]
+            bkol = next((k for k in kol if BK.search(k) and not TJAL.search(k)), None)
+            if not bkol:
+                continue
+            print(f"  Tabell {tab}: bärighetsklass i kolumnen '{bkol}'", file=sys.stderr)
+            for rad in cur:
+                p = dict(zip(kol, rad))
+                try:
+                    linjer = gpkg_linjer(p[gk[0]])
+                except Exception:
+                    linjer = []
+                yield bk_varde(p[bkol]), linjer
+    else:
+        with open(sokvag, encoding="utf-8") as f:
+            fc = json.load(f)
+        for ft in fc.get("features", []):
+            p = ft.get("properties") or {}
+            v = next((v for k, v in p.items() if BK.search(k) and not TJAL.search(k)), None)
+            g = ft.get("geometry") or {}
+            c = g.get("coordinates") or []
+            linjer = [c] if g.get("type") == "LineString" else c if g.get("type") == "MultiLineString" else []
+            yield bk_varde(v), [[(pt[0], pt[1]) for pt in l] for l in linjer]
+
+
+def main_bk(inn, ut, alla):
+    segment = []
+    for bk, linjer in bk_kalla(inn):
+        if not bk or (bk == 1 and not alla):
+            continue
+        for l in linjer:
+            if len(l) < 2:
+                continue
+            projicerad = abs(l[0][0]) > 180
+            l = forenkla(l, 5.0 if projicerad else 0.00005)
+            platt = []
+            for x, y in l:
+                lat, lon = till_wgs(x, y)
+                platt += [round(lat, 5), round(lon, 5)]
+            segment.append([bk, platt])
+    if not segment:
+        print("Hittade inga vägsträckor med bärighetsklass.", file=sys.stderr)
+        sys.exit(2)
+    with open(ut, "w", encoding="utf-8") as f:
+        json.dump({"kalla": "Trafikverket NVDB via Lastkajen (CC0)", "uppdaterad": datetime.date.today().isoformat(),
+                   "exempel": False, "segment": segment}, f, ensure_ascii=False, separators=(",", ":"))
+    print(f"Klart: {len(segment)} vägsträckor sparade i {ut}", file=sys.stderr)
+
+
 # ---------- GeoJSON ----------
 def forsta_punkt(g):
     t, c = g.get("type"), g.get("coordinates")
@@ -136,10 +262,14 @@ def las_geojson(sokvag):
 
 
 def main():
-    if len(sys.argv) < 2:
+    arg = [a for a in sys.argv[1:] if not a.startswith("--")]
+    if not arg:
         print(__doc__); sys.exit(1)
-    inn = sys.argv[1]
-    ut = sys.argv[2] if len(sys.argv) > 2 else "hinder.json"
+    if "--bk" in sys.argv:
+        main_bk(arg[0], arg[1] if len(arg) > 1 else "bk.json", "--alla" in sys.argv)
+        return
+    inn = arg[0]
+    ut = arg[1] if len(arg) > 1 else "hinder.json"
     kalla = las_gpkg(inn) if inn.lower().endswith(".gpkg") else las_geojson(inn)
     hinder, sedda = [], set()
     for i, (p, (x, y)) in enumerate(kalla):

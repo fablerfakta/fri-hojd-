@@ -31,6 +31,12 @@
   <main>
     <section id="vyKarta" class="vy">
       <div id="karta" aria-label="Karta över höjdhinder"></div>
+      <div class="bk-panel">
+        <button id="btnBk" class="bk-knapp" aria-pressed="true">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 18h18M5 18V9l7-4 7 4v9M9 18v-5h6v5"/></svg>Bärighet
+        </button>
+        <div id="bkLegend" class="bk-legend"></div>
+      </div>
       <button id="btnCentrera" class="fab" aria-label="Centrera på min position">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 4 20l8-4 8 4z"/></svg>
       </button>
@@ -86,6 +92,11 @@
     <div id="hyttNamn" class="hytt-namn"></div>
   </section>
 
+  <div class="hytt-bk">
+    <div><div class="liten">VÄGENS BÄRIGHET</div><div id="hyttBk" class="stor">–</div></div>
+    <div id="hyttBkText" class="hytt-bk-text"></div>
+  </div>
+
   <div id="hyttVarning" class="hytt-varning" hidden>
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2 21h20z"/><path d="M12 10v5M12 18v.5"/></svg>
     <div id="hyttVarnText"></div>
@@ -115,15 +126,70 @@
       </button>
     </div>
 
-    <fieldset>
+    <fieldset id="fsFordon">
       <legend>Fordon</legend>
-      <label for="inHojd">Fordonets höjd, inklusive last (meter)</label>
-      <div class="stegare">
-        <button type="button" data-steg="-0.05" aria-label="Minska 5 cm">−</button>
-        <input id="inHojd" type="number" inputmode="decimal" step="0.01" min="1.5" max="5">
-        <button type="button" data-steg="0.05" aria-label="Öka 5 cm">+</button>
+      <label for="valFordon">Aktivt fordon</label>
+      <div class="fordonval">
+        <select id="valFordon"></select>
       </div>
-      <label for="inMarg">Varna även när marginalen är mindre än (meter)</label>
+      <div class="fordonknappar">
+        <button type="button" id="btnNyttFordon" class="knapp-sek">+ Nytt</button>
+        <button type="button" id="btnKopiera" class="knapp-sek">Kopiera</button>
+        <button type="button" id="btnTaBort" class="knapp-sek">Ta bort</button>
+      </div>
+      <div id="taBortFraga" class="fraga" hidden>
+        <span id="taBortText"></span>
+        <button type="button" id="btnTaBortJa" class="knapp-sek">Ja, ta bort</button>
+        <button type="button" id="btnTaBortNej" class="knapp-lank">Avbryt</button>
+      </div>
+
+      <div class="falt2">
+        <label>Namn<input id="fNamn" type="text" maxlength="40" placeholder="t.ex. Scania + trailer"></label>
+        <label>Registreringsnummer<input id="fReg" type="text" maxlength="12" autocapitalize="characters" placeholder="ABC 123"></label>
+      </div>
+      <label for="fTyp">Typ av fordon</label>
+      <select id="fTyp">
+        <option value="lastbil">Lastbil</option>
+        <option value="lastbil-slap">Lastbil med släp</option>
+        <option value="dragbil-pv">Dragbil med påhängsvagn</option>
+        <option value="dragbil-dolly">Dragbil med dolly och påhängsvagn</option>
+        <option value="buss">Buss</option>
+        <option value="annat">Annat</option>
+      </select>
+
+      <div class="grupphuvud">Mått (meter)</div>
+      <label for="fHojd">Höjd, inklusive last</label>
+      <div class="stegare">
+        <button type="button" data-steg="-0.05" aria-label="Minska höjden 5 cm">−</button>
+        <input id="fHojd" type="number" inputmode="decimal" step="0.01" min="1.5" max="5">
+        <button type="button" data-steg="0.05" aria-label="Öka höjden 5 cm">+</button>
+      </div>
+      <div class="falt2">
+        <label>Bredd<input id="fBredd" type="number" inputmode="decimal" step="0.01" min="1" max="5"></label>
+        <label>Längd<input id="fLangd" type="number" inputmode="decimal" step="0.01" min="2" max="40"></label>
+      </div>
+
+      <div class="grupphuvud">Vikt (ton)</div>
+      <div class="falt2">
+        <label>Bruttovikt, hela ekipaget<input id="fVikt" type="number" inputmode="decimal" step="0.1" min="1" max="100"></label>
+        <label>Tjänstevikt (tomvikt)<input id="fTjanst" type="number" inputmode="decimal" step="0.1" min="0" max="100"></label>
+      </div>
+      <label for="fAxelavst">Avstånd mellan första och sista axeln (meter)</label>
+      <input id="fAxelavst" type="number" inputmode="decimal" step="0.01" min="0.5" max="40">
+
+      <div class="grupphuvud">Axlar och axelgrupper, framifrån</div>
+      <div id="grupper" class="grupper"></div>
+      <button type="button" id="btnNyGrupp" class="knapp-sek">+ Lägg till axel eller axelgrupp</button>
+      <p id="summaInfo" class="muted liten-text"></p>
+
+      <div class="grupphuvud">Får köra på</div>
+      <div id="bkResultat" class="bk-resultat" aria-live="polite"></div>
+      <p class="muted liten-text">Allt sparas automatiskt i telefonen.</p>
+    </fieldset>
+
+    <fieldset>
+      <legend>Varningar</legend>
+      <label for="inMarg">Varna även när höjdmarginalen är mindre än (meter)</label>
       <input id="inMarg" type="number" inputmode="decimal" step="0.05" min="0" max="1">
     </fieldset>
 
@@ -131,6 +197,7 @@
       <legend>Körning</legend>
       <label class="vaxel"><input type="checkbox" id="inAutoKor"> Slå på körläge automatiskt när jag kör</label>
       <label class="vaxel"><input type="checkbox" id="inRost"> Röstvarning</label>
+      <label class="vaxel"><input type="checkbox" id="inVisaBk"> Visa bärighet på kartan</label>
       <label for="inTema">Mörkt läge</label>
       <select id="inTema">
         <option value="auto">Automatiskt (efter solnedgång)</option>
@@ -142,12 +209,13 @@
     <fieldset>
       <legend>Data</legend>
       <p id="dataInfo" class="muted"></p>
-      <label for="inFil" class="knapp-sek">Ladda egen datafil (.json eller .geojson)</label>
+      <p id="bkDataInfo" class="muted"></p>
+      <label for="inFil" class="knapp-sek">Ladda egen datafil – höjdhinder eller bärighet (.json/.geojson)</label>
       <input id="inFil" type="file" accept=".json,.geojson,application/json" class="dold">
       <button type="button" id="btnStandardData" class="knapp-lank">Återställ till appens data</button>
     </fieldset>
 
-    <p class="ansvar">Följ alltid skyltningen på plats. Uppgifterna kommer från Trafikverkets vägdatabas NVDB och kan vara fel eller inaktuella. Hinder högre än 4,5 m finns inte med. Tillfälliga hinder, som vägarbeten, finns inte heller med.</p>
+    <p class="ansvar">Följ alltid skyltningen på plats. Uppgifterna kommer från Trafikverkets vägdatabas NVDB och kan vara fel eller inaktuella. Hinder högre än 4,5 m finns inte med. Tillfälliga hinder (vägarbeten), lokala viktbegränsningar på enskilda broar och tjällossningsrestriktioner finns inte heller med. Viktberäkningen följer trafikförordningens bruttoviktstabeller (bilaga 1–4) och 4 kap. 12 §, men tar inte hänsyn till särskilda regler för enskilda fordon, alternativa bränslen eller dispenser. Föraren ansvarar alltid för att ekipaget är lagligt.</p>
     <p class="muted liten-text">Fabler &amp; Fakta Studio · Vägdata © Trafikverket (CC0) · Karta © OpenStreetMap, © CARTO</p>
   </form>
 </dialog>
@@ -162,12 +230,20 @@
       <input id="inStartHojd" type="number" inputmode="decimal" step="0.01" min="1.5" max="5" value="4.00" aria-label="Fordonets höjd i meter">
       <button type="button" data-steg="0.05" aria-label="Öka 5 cm">+</button>
     </div>
-    <p class="ansvar">Följ alltid skyltningen på plats. Datan kan vara fel eller inaktuell, och hinder över 4,5 m finns inte med.</p>
+    <label for="inStartNamn">Namn på fordonet</label>
+    <input id="inStartNamn" type="text" maxlength="40" value="Mitt fordon">
+    <label for="inStartVikt">Bruttovikt (ton)</label>
+    <input id="inStartVikt" type="number" inputmode="decimal" step="0.1" min="1" max="100" value="40">
+    <label for="inStartAvst">Avstånd första–sista axeln (meter)</label>
+    <input id="inStartAvst" type="number" inputmode="decimal" step="0.01" min="0.5" max="40" value="12.5">
+    <p class="muted liten-text">Mått, axeltryck och fler fordon lägger du till under Inställningar.</p>
+    <p class="ansvar">Följ alltid skyltningen på plats. Datan kan vara fel eller inaktuell, och hinder över 4,5 m finns inte med. Föraren ansvarar alltid för höjd och vikt.</p>
     <button value="ok" class="knapp-prim">Jag förstår – börja</button>
   </form>
 </dialog>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<script src="vikt.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

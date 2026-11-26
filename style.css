@@ -135,4 +135,40 @@ html[data-tema=morkt] .knapp-lank{color:#8DB5FF}
 .hytt-darefter .sub{font:500 14px/1.3 var(--text);color:#A3ACB9}
 .hytt-gps{margin:0;font:500 13px/1.3 var(--text);color:#8A93A0;text-align:center}
 
+/* Fordon */
+input[type=text]{height:48px;border:1px solid var(--linje);border-radius:12px;padding:0 12px;background:var(--bg);font-size:17px;width:100%}
+.falt2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.falt2 label{display:flex;flex-direction:column;gap:4px;font-size:15px}
+.fordonknappar{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.fraga{display:flex;flex-wrap:wrap;align-items:center;gap:8px;background:var(--rod-ljus);color:var(--rod-text);border-radius:12px;padding:10px}
+.fraga span{flex-basis:100%;font-weight:600}
+.ta-bort{width:44px;height:44px;border:0;border-radius:10px;background:var(--bg);display:flex;align-items:center;justify-content:center;flex:none}
+
+/* Bärighet */
+.bk-panel{position:absolute;z-index:500;left:12px;top:12px;display:flex;flex-direction:column;align-items:flex-start;gap:6px;max-width:calc(100% - 80px)}
+.bk-knapp{display:flex;align-items:center;gap:8px;height:44px;padding:0 14px;border:0;border-radius:14px;background:var(--yta);color:var(--ink);font:700 17px/1 var(--rubrik);box-shadow:0 2px 10px rgba(0,0,0,.18)}
+.bk-knapp[aria-pressed=true]{background:var(--svart);color:var(--gul)}
+html[data-tema=morkt] .bk-knapp[aria-pressed=true]{background:var(--gul);color:var(--svart)}
+.bk-legend{background:var(--yta);color:var(--ink);border-radius:12px;padding:8px 10px;font-size:13px;line-height:1.35;box-shadow:0 2px 10px rgba(0,0,0,.15)}
+.bk-legend:empty{display:none}
+.bk-legend i{display:inline-block;width:18px;height:4px;border-radius:2px;vertical-align:middle;margin-right:6px}
+.grupphuvud{font-weight:500;margin-top:4px}
+.grupper{display:flex;flex-direction:column;gap:8px}
+.grupp{border:1px solid var(--linje);border-radius:12px;padding:10px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;align-items:end}
+.grupp .full{grid-column:1/-1;display:flex;gap:8px;align-items:center}
+.grupp .full select{flex:1}
+.grupp label{font-size:14px;display:flex;flex-direction:column;gap:4px}
+.grupp input[type=number]{height:44px;font-size:16px}
+.grupp .vaxel{flex-direction:row;font-size:14px;grid-column:1/-1;min-height:36px}
+.bk-resultat{display:grid;gap:6px}
+.bk-rad{display:flex;gap:10px;align-items:flex-start;border-radius:10px;padding:8px 10px;font-size:15px}
+.bk-rad b{font:800 18px/1.1 var(--rubrik);min-width:40px}
+.bk-rad.ok{background:var(--gron-ljus);color:var(--gron-text)}
+.bk-rad.nej{background:var(--rod-ljus);color:var(--rod-text)}
+.hytt-bk{background:#141922;border:1px solid #262D38;border-radius:16px;padding:12px 16px;display:flex;align-items:center;gap:14px}
+.hytt-bk .stor{font-size:34px}
+.hytt-bk-text{font:500 16px/1.3 var(--text);color:#C7CDD6}
+.hytt-bk.varn{background:#2A1416;border-color:#5C2327}
+.hytt-bk.varn .hytt-bk-text{color:#FFD9DA;font-weight:600}
+
 @media (prefers-reduced-motion:reduce){.matare div{transition:none}}

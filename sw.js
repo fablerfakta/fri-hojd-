@@ -1,6 +1,6 @@
 // Fri höjd – enkel offline-cache för appens egna filer (kartbilderna kräver nät)
-const CACHE = 'frihojd-v1';
-const FILER = ['./', 'index.html', 'style.css', 'app.js', 'data/hinder.json', 'manifest.webmanifest', 'icon.svg'];
+const CACHE = 'frihojd-v2';
+const FILER = ['./', 'index.html', 'style.css', 'app.js', 'vikt.js', 'data/hinder.json', 'data/bk.json', 'manifest.webmanifest', 'icon.svg'];
 self.addEventListener('install', (e) => e.waitUntil(caches.open(CACHE).then((c) => c.addAll(FILER)).then(() => self.skipWaiting())));
 self.addEventListener('activate', (e) => e.waitUntil(caches.keys().then((k) => Promise.all(k.filter((n) => n !== CACHE).map((n) => caches.delete(n)))).then(() => self.clients.claim())));
 self.addEventListener('fetch', (e) => {
