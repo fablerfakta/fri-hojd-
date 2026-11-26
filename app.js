@@ -8,9 +8,12 @@ const INST_KEY = 'frihojd.inst';
 const DATA_KEY = 'frihojd.egenData';
 const BK_KEY = 'frihojd.egenBk';
 const ADR_KEY = 'frihojd.egenAdr';
-const STANDARD = { marg: 0.2, autoKor: true, rost: true, tema: 'auto', startad: false, visaBk: true, fordon: [], aktivt: null };
+const STANDARD = { marg: 0.2, autoKor: true, rost: true, tema: 'auto', startad: false, lager: { hojd: true, bk: true, adr: true }, fordon: [], aktivt: null };
 let inst = { ...STANDARD };
 try { inst = { ...STANDARD, ...JSON.parse(localStorage.getItem(INST_KEY) || '{}') }; } catch (e) {}
+inst.lager = { ...STANDARD.lager, ...(inst.lager || {}) };
+if (inst.visaBk === false) inst.lager.bk = false;
+delete inst.visaBk;
 function sparaInst() { try { localStorage.setItem(INST_KEY, JSON.stringify(inst)); } catch (e) {} }
 
 /* ---------- Fordon (flera sparade profiler) ---------- */
@@ -347,6 +350,7 @@ function popupHtml(h) {
 function ritaPunkter() {
   if (!karta) return;
   punktLager.clearLayers();
+  if (!inst.lager.hojd) { etikettLager.clearLayers(); ritaLegend(); return; }
   data.hinder.forEach((h) => {
     const s = status(h.h);
     L.circleMarker([h.lat, h.lon], { renderer, radius: s === 'gron' ? 6 : 8, color: '#fff', weight: 2, fillColor: FARG[s], fillOpacity: 1 })
@@ -357,7 +361,7 @@ function ritaPunkter() {
 function ritaEtiketter() {
   if (!karta) return;
   etikettLager.clearLayers();
-  if (karta.getZoom() < 12) return;
+  if (!inst.lager.hojd || karta.getZoom() < 12) return;
   const b = karta.getBounds().pad(0.1);
   let n = 0;
   for (const h of data.hinder) {
@@ -383,48 +387,57 @@ function startaKarta() {
   ritaPunkter();
 }
 
-/* ---------- Bärighet på kartan ---------- */
+/* ---------- Kartlager: höjd, bärighet och farligt gods ---------- */
 const BK_NAMN = (bk) => 'BK' + bk;
-function bkSammanfattning() {
-  if (!bedomning) return '';
-  const ok = [4, 1, 2, 3].filter((k) => bedomning[k].ok);
-  return ok.length ? ok.map(BK_NAMN).join(', ') : 'ingen klass';
+const BK_FARG = { 2: '#7B3FE4', 3: '#8B5A2B', 4: '#1E9E5A' };
+const synlig = (sg, v) => !(sg.bb[2] < v.getSouth() || sg.bb[0] > v.getNorth() || sg.bb[3] < v.getWest() || sg.bb[1] > v.getEast());
+function ritaLagerknappar() {
+  for (const [id, nyckel] of [['btnLagerHojd', 'hojd'], ['btnLagerBk', 'bk'], ['btnLagerAdr', 'adr']])
+    $(id).setAttribute('aria-pressed', inst.lager[nyckel] ? 'true' : 'false');
+}
+function ritaLegend() {
+  const rader = [];
+  const f = F(), b = bedomning;
+  if (inst.lager.hojd) rader.push(`<span class="leg-rubrik">Höjd</span><i class="p" style="background:#D0021B"></i>för lågt <i class="p" style="background:#F2B705"></i>nära <i class="p" style="background:#1E9E5A"></i>OK`);
+  if (inst.lager.bk) {
+    if (!bkData.segment.length) rader.push('<span class="leg-rubrik">Bärighet</span>ingen data laddad');
+    else {
+      let t = '<span class="leg-rubrik">Bärighet</span><i style="background:#D0021B;height:6px"></i>för tungt';
+      if (b && !b[1].ok && b[4].ok) t += ' · kräver BK4';
+      t += `<br><i style="background:${BK_FARG[4]}"></i>BK4 <i style="background:${BK_FARG[2]}"></i>BK2 <i style="background:${BK_FARG[3]}"></i>BK3 · övriga BK1`;
+      rader.push(t);
+    }
+  }
+  if (inst.lager.adr) {
+    if (!adrData.segment.length) rader.push('<span class="leg-rubrik">Farligt gods</span>ingen data laddad');
+    else rader.push('<span class="leg-rubrik">Farligt gods</span>'
+      + (f.adr && adrForbudFran(f) ? `<i class="streck" style="border-color:#E8590C"></i>förbjudet för din last<br>` : '')
+      + `<i class="streck tunn" style="border-color:#E8590C"></i>tunnel/förbud <i style="background:#1F5FD6"></i>rekommenderad`);
+  }
+  const ex = (inst.lager.hojd && data.exempel) || (inst.lager.bk && bkData.exempel) || (inst.lager.adr && adrData.exempel);
+  if (karta && karta.getZoom() < 9 && (inst.lager.bk || inst.lager.adr)) rader.push('<em>Zooma in för att se vägarna.</em>');
+  if (ex) rader.push('<b>Exempeldata</b>');
+  $('kartLegend').innerHTML = rader.map((r) => `<div>${r}</div>`).join('');
 }
 function ritaBk() {
   if (!karta || !bkLager) return;
   bkLager.clearLayers();
-  const knapp = $('btnBk'), leg = $('bkLegend');
-  knapp.setAttribute('aria-pressed', inst.visaBk ? 'true' : 'false');
-  if (!inst.visaBk) { leg.innerHTML = ''; return; }
-  if (!bkData.segment.length) { leg.textContent = 'Ingen bärighetsdata laddad.'; return; }
-  const b = bedomning;
-  const kraverBk4 = b && !b[1].ok && b[4].ok;
-  const ingen = b && !b[4].ok && !b[1].ok;
-  let text;
-  if (ingen) text = '<i style="background:#D0021B"></i>För tungt för alla klasser – kontrollera vikterna.';
-  else if (kraverBk4) text = '<i style="background:#1E9E5A"></i>Ditt ekipage kräver BK4 – bara gröna vägar.';
-  else if (b && b[3].ok) text = 'Ditt ekipage får köra på alla bärighetsklasser.';
-  else text = `<i style="background:#D0021B"></i>För låg bärighet för ${esc(F().namn)}`;
-  if (karta.getZoom() < 9) { leg.innerHTML = text + '<br>Zooma in för att se vägarna.'; return; }
-  leg.innerHTML = text + (bkData.exempel ? '<br><b>Exempeldata</b>' : '');
-  const v = karta.getBounds().pad(0.1);
-  const [s0, w0, n0, e0] = [v.getSouth(), v.getWest(), v.getNorth(), v.getEast()];
+  ritaLegend();
+  if (!inst.lager.bk || !bkData.segment.length || karta.getZoom() < 9) return;
+  const b = bedomning, v = karta.getBounds().pad(0.1);
   let n = 0;
   for (const sg of bkData.segment) {
-    const [a, bb, c, d] = sg.bb;
-    if (c < s0 || a > n0 || d < w0 || bb > e0) continue;
-    let farg = null;
-    if (b && !b[sg.bk].ok) farg = '#D0021B';
-    else if (kraverBk4 && sg.bk === 4) farg = '#1E9E5A';
-    if (!farg) continue;
-    if (++n > 5000) break;
-    L.polyline(sg.pts, { renderer, color: farg, weight: 5, opacity: 0.8 })
-      .bindPopup(`<b>${BK_NAMN(sg.bk)}</b><br>${b && !b[sg.bk].ok ? esc(b[sg.bk].skal.join(' · ')) : 'Ditt ekipage får köra här.'}`)
+    if (!synlig(sg, v)) continue;
+    if (++n > 6000) break;
+    const forbjuden = b && !b[sg.bk].ok;
+    L.polyline(sg.pts, forbjuden
+      ? { renderer, color: '#D0021B', weight: 7, opacity: 0.85 }
+      : { renderer, color: BK_FARG[sg.bk] || '#888', weight: 3, opacity: 0.7 })
+      .bindPopup(`<b>${BK_NAMN(sg.bk)}</b><br>${forbjuden ? 'För tungt: ' + esc(b[sg.bk].skal.join(' · ')) : esc(F().namn) + ' får köra här.'}`
+        + `<br><a href="${STFS_URL}" target="_blank" rel="noopener">Lokala trafikföreskrifter (STFS)</a>`)
       .addTo(bkLager);
   }
 }
-
-/* ---------- Farligt gods på kartan ---------- */
 function adrBeskrivning(sg) {
   if (sg.kat === 'R') return 'Rekommenderad väg för farligt gods';
   return sg.kat === 'E' ? 'Förbud mot farligt gods (tunnelkategori E / allmänt förbud)' : `Tunnelkategori ${sg.kat}`;
@@ -432,26 +445,21 @@ function adrBeskrivning(sg) {
 function ritaAdr() {
   if (!karta || !adrLager) return;
   adrLager.clearLayers();
-  const f = F(), leg = $('adrLegend');
-  if (!f.adr) { leg.innerHTML = ''; return; }
-  if (!adrData.segment.length) { leg.textContent = 'Ingen data om farligt gods laddad.'; return; }
-  const fran = adrForbudFran(f);
-  leg.innerHTML = (fran ? `<i style="background:#E8590C"></i>Förbjudet för din last (kod ${esc(f.tunnelkod)})<br>` : 'Koden ger inga tunnelförbud.<br>')
-    + '<i style="background:#1F5FD6"></i>Rekommenderad väg för farligt gods' + (adrData.exempel ? '<br><b>Exempeldata</b>' : '');
-  if (karta.getZoom() < 8) return;
-  const v = karta.getBounds().pad(0.1);
+  ritaLegend();
+  if (!inst.lager.adr || !adrData.segment.length || karta.getZoom() < 8) return;
+  const f = F(), v = karta.getBounds().pad(0.1);
   let n = 0;
   for (const sg of adrData.segment) {
-    const [a, b, c, d] = sg.bb;
-    if (c < v.getSouth() || a > v.getNorth() || d < v.getWest() || b > v.getEast()) continue;
+    if (!synlig(sg, v)) continue;
+    if (++n > 6000) break;
     const forb = adrForbjuden(sg.kat, f);
-    if (sg.kat !== 'R' && !forb) continue;
-    if (++n > 5000) break;
-    L.polyline(sg.pts, forb
-      ? { renderer, color: '#E8590C', weight: 7, opacity: 0.9, dashArray: '10 8' }
-      : { renderer, color: '#1F5FD6', weight: 4, opacity: 0.6 })
-      .bindPopup(`<b>${esc(sg.namn || adrBeskrivning(sg))}</b><br>${esc(adrBeskrivning(sg))}${forb ? '<br><span class="status s-rod">Förbjudet för din last</span>' : ''}`
-        + `<br><a href="${STFS_URL}" target="_blank" rel="noopener">Se lokala trafikföreskrifter (STFS)</a>`)
+    const stil = sg.kat === 'R' ? { renderer, color: '#1F5FD6', weight: 4, opacity: 0.6 }
+      : forb ? { renderer, color: '#E8590C', weight: 8, opacity: 0.95, dashArray: '10 8' }
+      : { renderer, color: '#E8590C', weight: 4, opacity: 0.7, dashArray: '6 6' };
+    L.polyline(sg.pts, stil)
+      .bindPopup(`<b>${esc(sg.namn || adrBeskrivning(sg))}</b><br>${esc(adrBeskrivning(sg))}`
+        + (f.adr ? (forb ? '<br><span class="status s-rod">Förbjudet för din last</span>' : sg.kat !== 'R' ? '<br><span class="status s-gron">Tillåtet för din last</span>' : '') : '')
+        + `<br><a href="${STFS_URL}" target="_blank" rel="noopener">Lokala trafikföreskrifter (STFS)</a>`)
       .addTo(adrLager);
   }
 }
@@ -856,7 +864,7 @@ function oppnaInst() {
   $('inMarg').value = inst.marg.toFixed(2);
   $('inAutoKor').checked = inst.autoKor;
   $('inRost').checked = inst.rost;
-  $('inVisaBk').checked = inst.visaBk;
+  $('inVisaBk').checked = inst.lager.bk;
   $('inTema').value = inst.tema;
   $('dataInfo').textContent = dataText();
   $('bkDataInfo').textContent = bkDataText();
@@ -872,7 +880,7 @@ function lasHojd(el) {
 $('inMarg').addEventListener('input', (e) => { const v = talEllerNull(e.target.value); if (v != null && v >= 0 && v <= 1) { inst.marg = v; sparaInst(); allaRitas(); } });
 $('inAutoKor').addEventListener('change', (e) => { inst.autoKor = e.target.checked; sparaInst(); });
 $('inRost').addEventListener('change', (e) => { inst.rost = e.target.checked; sparaInst(); });
-$('inVisaBk').addEventListener('change', (e) => { inst.visaBk = e.target.checked; sparaInst(); ritaBk(); });
+$('inVisaBk').addEventListener('change', (e) => { inst.lager.bk = e.target.checked; sparaInst(); ritaLagerknappar(); ritaBk(); });
 $('inTema').addEventListener('change', (e) => { inst.tema = e.target.value; sparaInst(); uppdateraTema(); });
 document.querySelectorAll('.stegare button').forEach((b) => b.addEventListener('click', () => {
   const inp = b.parentElement.querySelector('input');
@@ -927,7 +935,11 @@ document.querySelectorAll('.chip').forEach((c) => c.addEventListener('click', ()
   ritaLista();
 }));
 $('btnFordon').addEventListener('click', oppnaInst);
-$('btnBk').addEventListener('click', () => { inst.visaBk = !inst.visaBk; sparaInst(); ritaBk(); });
+function vaxlaLager(nyckel) { inst.lager[nyckel] = !inst.lager[nyckel]; sparaInst(); ritaLagerknappar(); ritaPunkter(); ritaBk(); ritaAdr(); }
+$('btnLagerHojd').addEventListener('click', () => vaxlaLager('hojd'));
+$('btnLagerBk').addEventListener('click', () => vaxlaLager('bk'));
+$('btnLagerAdr').addEventListener('click', () => vaxlaLager('adr'));
+ritaLagerknappar();
 $('btnCentrera').addEventListener('click', () => { if (pos && karta) karta.setView([pos.lat, pos.lon], 14); else startaGps(); });
 $('btnKor').addEventListener('click', () => { stangdManuellt = false; oppnaHytt(false); });
 $('btnStangHytt').addEventListener('click', () => stangHytt(true));

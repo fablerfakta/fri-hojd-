@@ -32,11 +32,15 @@
     <section id="vyKarta" class="vy">
       <div id="karta" aria-label="Karta över höjdhinder"></div>
       <div class="bk-panel">
-        <button id="btnBk" class="bk-knapp" aria-pressed="true">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 18h18M5 18V9l7-4 7 4v9M9 18v-5h6v5"/></svg>Bärighet
-        </button>
-        <div id="bkLegend" class="bk-legend"></div>
-        <div id="adrLegend" class="bk-legend"></div>
+        <div class="lagerknappar" role="group" aria-label="Visa på kartan">
+          <button id="btnLagerHojd" class="bk-knapp" aria-pressed="true">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V8a8 8 0 0 1 16 0v12"/><path d="M12 3v4M12 21v-4"/></svg>Höjd</button>
+          <button id="btnLagerBk" class="bk-knapp" aria-pressed="true">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 18h18M5 18V9l7-4 7 4v9M9 18v-5h6v5"/></svg>Bärighet</button>
+          <button id="btnLagerAdr" class="bk-knapp" aria-pressed="true">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 2 12l10 10 10-10z"/><path d="M12 8v5M12 16v.5"/></svg>ADR</button>
+        </div>
+        <details class="bk-legend legend-ruta"><summary>Teckenförklaring</summary><div id="kartLegend"></div></details>
       </div>
       <button id="btnCentrera" class="fab" aria-label="Centrera på min position">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 4 20l8-4 8 4z"/></svg>
@@ -220,7 +224,7 @@
       <legend>Körning</legend>
       <label class="vaxel"><input type="checkbox" id="inAutoKor"> Slå på körläge automatiskt när jag kör</label>
       <label class="vaxel"><input type="checkbox" id="inRost"> Röstvarning</label>
-      <label class="vaxel"><input type="checkbox" id="inVisaBk"> Visa bärighet på kartan</label>
+      <label class="vaxel"><input type="checkbox" id="inVisaBk"> Visa bärighet på kartan (kan också slås av och på direkt på kartan)</label>
       <label for="inTema">Mörkt läge</label>
       <select id="inTema">
         <option value="auto">Automatiskt (efter solnedgång)</option>

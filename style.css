@@ -152,12 +152,22 @@ html[data-tema=morkt] .adr-falt a,html[data-tema=morkt] .lank{color:#8DB5FF}
 #nemRad{display:flex;flex-direction:column;gap:4px;font-size:15px}
 
 /* Bärighet */
-.bk-panel{position:absolute;z-index:500;left:12px;top:12px;display:flex;flex-direction:column;align-items:flex-start;gap:6px;max-width:calc(100% - 80px)}
+.bk-panel{position:absolute;z-index:500;left:12px;top:12px;max-width:calc(100% - 70px);display:flex;flex-direction:column;align-items:flex-start;gap:6px;max-width:calc(100% - 80px)}
 .bk-knapp{display:flex;align-items:center;gap:8px;height:44px;padding:0 14px;border:0;border-radius:14px;background:var(--yta);color:var(--ink);font:700 17px/1 var(--rubrik);box-shadow:0 2px 10px rgba(0,0,0,.18)}
 .bk-knapp[aria-pressed=true]{background:var(--svart);color:var(--gul)}
 html[data-tema=morkt] .bk-knapp[aria-pressed=true]{background:var(--gul);color:var(--svart)}
 .bk-legend{background:var(--yta);color:var(--ink);border-radius:12px;padding:8px 10px;font-size:13px;line-height:1.35;box-shadow:0 2px 10px rgba(0,0,0,.15)}
 .bk-legend:empty{display:none}
+.lagerknappar{display:flex;flex-wrap:wrap;gap:6px}
+.lagerknappar .bk-knapp{height:44px;padding:0 12px;font-size:16px;gap:6px}
+.lagerknappar .bk-knapp[aria-pressed=false]{opacity:.85;text-decoration:line-through;text-decoration-thickness:2px}
+.legend-ruta summary{cursor:pointer;font-weight:600;min-height:28px;display:flex;align-items:center}
+.legend-ruta[open] summary{margin-bottom:6px}
+#kartLegend>div+div{margin-top:4px;padding-top:4px;border-top:1px solid var(--linje)}
+.leg-rubrik{font-weight:700;margin-right:6px}
+.bk-legend i.p{width:10px;height:10px;border-radius:50%}
+.bk-legend i.streck{width:18px;height:0;border-top:4px dashed;background:none;border-radius:0}
+.bk-legend i.streck.tunn{border-top-width:2px}
 .bk-legend i{display:inline-block;width:18px;height:4px;border-radius:2px;vertical-align:middle;margin-right:6px}
 .grupphuvud{font-weight:500;margin-top:4px}
 .grupper{display:flex;flex-direction:column;gap:8px}
