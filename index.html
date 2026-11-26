@@ -7,6 +7,7 @@
 <title>Fri höjd</title>
 <meta name="description" content="Höjdhinder på svenska vägar för lastbilar, enligt Trafikverkets vägdata (NVDB).">
 <link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png" type="image/png" sizes="192x192">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -14,14 +15,14 @@
 <meta name="apple-mobile-web-app-title" content="Fri höjd">
 <link rel="stylesheet" href="lib/fonts/fonts.css">
 <link rel="stylesheet" href="lib/leaflet/leaflet.css">
-<link rel="stylesheet" href="style.css?v=18">
+<link rel="stylesheet" href="style.css?v=19">
 </head>
 <body>
 
 <!-- ===== Kartan + listan (vanligt läge) ===== -->
 <div id="app">
   <header class="top">
-    <div class="brand" data-ingen-oversattning>FRI HÖJD</div>
+    <div class="brand" data-ingen-oversattning><img src="icon-192.png" alt="" class="brand-ikon" width="36" height="36">FRI HÖJD</div>
     <button id="btnFordon" class="pill" aria-label="Ändra fordonets höjd">
       <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="7" width="13" height="10"/><path d="M15 10h4l3 3v4h-7"/><circle cx="7" cy="18" r="2"/><circle cx="18" cy="18" r="2"/></svg>
       <span id="pillHojd">4,10 m</span>
@@ -355,8 +356,8 @@
 </dialog>
 
 <script src="lib/leaflet/leaflet.js"></script>
-<script src="i18n.js?v=18"></script>
-<script src="vikt.js?v=18"></script>
-<script src="app.js?v=18"></script>
+<script src="i18n.js?v=19"></script>
+<script src="vikt.js?v=19"></script>
+<script src="app.js?v=19"></script>
 </body>
 </html>
