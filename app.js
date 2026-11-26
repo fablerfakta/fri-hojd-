@@ -725,15 +725,39 @@ const TEXTER = {
     bk: (bk) => `Warning. You are on a road with load class ${bk}. Your vehicle is too heavy.`,
     adr: (avst, namn) => `Warning. Dangerous goods restriction ${avst}. ${namn}.`,
     har: 'here', test: 'This is the Fri höjd voice. Low bridge in 800 metres. Clearance 3.6 metres.'
+  },
+  pl: {
+    nara: 'tuż przed tobą',
+    om: (d) => 'za ' + (d < 1000 ? `${Math.max(10, Math.round(d / 10) * 10)} metrów` : d < 10000 ? `${(d / 1000).toFixed(1).replace('.', ',')} kilometra` : `${Math.round(d / 1000)} kilometrów`),
+    hojdRod: (avst, h) => `Uwaga. Niska przeszkoda ${avst}. Wysokość przejazdu ${h} metra. Twój pojazd się nie zmieści.`,
+    hojdGul: (avst, h) => `Ograniczenie wysokości ${avst}. Wysokość przejazdu ${h} metra. Mały zapas.`,
+    bk: (bk) => `Uwaga. Jedziesz drogą o klasie nośności B K ${bk}. Pojazd jest za ciężki.`,
+    adr: (avst, namn) => `Uwaga. Zakaz przewozu towarów niebezpiecznych ${avst}. ${namn}.`,
+    har: 'tutaj', test: 'To jest głos aplikacji Fri höjd. Niski wiadukt za 800 metrów. Wysokość przejazdu 3,6 metra.'
+  },
+  ro: {
+    nara: 'chiar în fața ta',
+    om: (d) => {
+      if (d < 1000) { const m = Math.max(10, Math.round(d / 10) * 10); return `peste ${m}${m >= 20 ? ' de' : ''} metri`; }
+      const km = d < 10000 ? (d / 1000).toFixed(1).replace('.', ',') : String(Math.round(d / 1000));
+      return `peste ${km}${d >= 20000 ? ' de' : ''} kilometri`;
+    },
+    hojdRod: (avst, h) => `Atenție. Obstacol jos ${avst}. Înălțime liberă ${h} metri. Vehiculul nu încape.`,
+    hojdGul: (avst, h) => `Limită de înălțime ${avst}. Înălțime liberă ${h} metri. Marjă mică.`,
+    bk: (bk) => `Atenție. Circulați pe un drum cu clasa de capacitate portantă B K ${bk}. Vehiculul este prea greu.`,
+    adr: (avst, namn) => `Atenție. Restricție pentru mărfuri periculoase ${avst}. ${namn}.`,
+    har: 'aici', test: 'Aceasta este vocea aplicației Fri höjd. Pod jos peste 800 de metri. Înălțime liberă 3,6 metri.'
   }
 };
+const TAL_LANG = { sv: 'sv-SE', en: 'en-GB', pl: 'pl-PL', ro: 'ro-RO' };
+const SPRAK_NAMN_ROST = { sv: 'svenska', en: 'engelska', pl: 'polska', ro: 'rumänska' };
 const T = () => TEXTER[inst.rostInst.sprak] || TEXTER.sv;
 const talHojd = (h) => inst.rostInst.sprak === 'en' ? Number(h).toFixed(1) : fmtM(h, 1);
 function tala(text, avbryt = true) {
   if (!('speechSynthesis' in window)) return;
   const ri = inst.rostInst, { v, simulera } = valjRost();
   const u = new SpeechSynthesisUtterance(text);
-  u.lang = ri.sprak === 'en' ? 'en-GB' : 'sv-SE';
+  u.lang = TAL_LANG[ri.sprak] || 'sv-SE';
   if (v) { u.voice = v; u.lang = v.lang; }
   let pitch = +ri.pitch || 1;
   if (simulera) pitch *= ri.kon === 'man' ? 0.75 : 1.2;
@@ -976,8 +1000,8 @@ function fyllRostval() {
     + lista.map((v) => `<option value="${esc(v.name)}"${v.name === ri.rostNamn ? ' selected' : ''}>${esc(etikett(v))}</option>`).join('');
   const antal = lista.length;
   $('rostInfo').textContent = !('speechSynthesis' in window) ? 'Telefonen har ingen talsyntes.'
-    : antal ? `${antal} ${ri.sprak === 'en' ? 'engelska' : 'svenska'} röster finns i telefonen. Finns ingen röst av valt kön görs rösten ljusare eller mörkare.`
-    : `Ingen ${ri.sprak === 'en' ? 'engelsk' : 'svensk'} röst hittades. Installera den under telefonens inställningar för talsyntes (text till tal).`;
+    : antal ? `${antal} röster på ${SPRAK_NAMN_ROST[ri.sprak]} finns i telefonen. Finns ingen röst av valt kön görs rösten ljusare eller mörkare.`
+    : `Ingen röst på ${SPRAK_NAMN_ROST[ri.sprak]} hittades. Installera den under telefonens inställningar för talsyntes (text till tal).`;
 }
 function visaRostInst() {
   const ri = inst.rostInst;
@@ -1042,6 +1066,23 @@ $('btnStandardData').addEventListener('click', async () => {
   $('dataInfo').textContent = dataText(); $('bkDataInfo').textContent = bkDataText(); $('adrDataInfo').textContent = adrDataText(); allaRitas();
 });
 
+/* ---------- Språk ---------- */
+function fyllSprakval() {
+  const opt = Object.entries(I18N.SPRAK).map(([k, s]) => `<option value="${k}"${k === I18N.sprak ? ' selected' : ''}>${s.namn}${s.granskad ? '' : ' (beta)'}</option>`).join('');
+  $('inSprak').innerHTML = opt; $('inStartSprak').innerHTML = opt;
+  const s = I18N.SPRAK[I18N.sprak];
+  $('sprakInfo').innerHTML = s.granskad ? '' : '<span class="ej-granskad">Översatt – ej granskat</span> Översättningen har inte granskats av någon med språket som modersmål.';
+}
+async function bytSprak(kod) {
+  try { await I18N.valj(kod); } catch (e) { $('sprakInfo').textContent = 'Språket kunde inte laddas ner. Kontrollera nätet.'; return; }
+  if (TEXTER[kod]) { inst.rostInst.sprak = kod; inst.rostInst.rostNamn = ''; sparaInst(); }
+  fyllSprakval();
+  allaRitas(); ritaLegend();
+  if ($('dlgInst').open) { visaFordon(); visaRostInst(); fyllFordonsval(); }
+}
+$('inSprak').addEventListener('change', (e) => bytSprak(e.target.value));
+$('inStartSprak').addEventListener('change', (e) => bytSprak(e.target.value));
+
 /* ---------- Knappar ---------- */
 document.querySelectorAll('.sektion').forEach((d) => d.addEventListener('toggle', () => {
   if (d.open) document.querySelectorAll('.sektion').forEach((x) => { if (x !== d) x.open = false; });
@@ -1072,6 +1113,8 @@ document.addEventListener('visibilitychange', async () => {
 
 /* ---------- Start ---------- */
 (async function start() {
+  try { await I18N.valj(I18N.sparat()); } catch (e) { try { await I18N.valj('sv'); } catch (e2) {} }
+  fyllSprakval();
   uppdateraTema();
   visaHojd();
   startaKarta();

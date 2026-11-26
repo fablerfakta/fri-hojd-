@@ -47,3 +47,8 @@ Statisk sajt – fungerar direkt på GitHub Pages. Kan installeras på hemskärm
 ## Integritet och licenser
 - Integritetspolicy: `integritet.html`
 - Leaflet 1.9.4 (BSD-2, `lib/leaflet/LICENSE`) och Barlow-typsnitten (SIL OFL 1.1, `lib/fonts/OFL.txt`) ligger i appen – inga anrop till unpkg eller Google Fonts.
+
+## Språk
+- Svenska (grund), engelska, polska och rumänska. Språkfilerna ligger i `lang/` och laddas ner när föraren väljer språk.
+- Översättningarna redigeras i `verktyg/sprakfiler.py` (en rad per text: svenska, engelska, polska, rumänska). Kör `python3 verktyg/sprakfiler.py` efteråt.
+- Polska och rumänska är märkta "Översatt – ej granskat" tills någon med språket som modersmål har granskat dem. Sätt då `granskad: True` i `i18n.js`.

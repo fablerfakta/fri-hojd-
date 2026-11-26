@@ -156,6 +156,11 @@ input[type=text]{height:48px;border:1px solid var(--linje);border-radius:12px;pa
 .om a{color:#1F5FD6}
 html[data-tema=morkt] .om a{color:#8DB5FF}
 
+/* Språkval */
+.sprakval{display:flex;flex-direction:column;gap:6px;border:1px solid var(--linje);border-radius:16px;padding:12px 14px}
+.sprakval label{display:flex;align-items:center;gap:8px;font:700 18px/1.2 var(--rubrik)}
+.ej-granskad{display:inline-block;background:var(--gul-ljus);color:var(--gul-text);border-radius:8px;padding:2px 8px;font-size:13px;font-weight:600}
+
 /* Inställningar som klickbara rubriker */
 .sektion{border:1px solid var(--linje);border-radius:16px;background:var(--yta);overflow:hidden}
 .sektion>summary{list-style:none;display:flex;align-items:center;gap:14px;min-height:64px;padding:10px 14px;cursor:pointer}
