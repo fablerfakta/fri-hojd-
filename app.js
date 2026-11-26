@@ -902,6 +902,7 @@ function oppnaInst() {
   $('dataInfo').textContent = dataText();
   $('bkDataInfo').textContent = bkDataText();
   $('adrDataInfo').textContent = adrDataText();
+  $('omDatastatus').textContent = 'Inlästa data just nu: ' + [dataText(), bkDataText(), adrDataText()].join(' · ');
   $('dlgInst').show();
   markeraFlik();
 }

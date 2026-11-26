@@ -147,6 +147,15 @@ input[type=text]{height:48px;border:1px solid var(--linje);border-radius:12px;pa
 .fraga span{flex-basis:100%;font-weight:600}
 .ta-bort{width:44px;height:44px;border:0;border-radius:10px;background:var(--bg);display:flex;align-items:center;justify-content:center;flex:none}
 
+/* Om appen */
+.om{border:1px solid var(--linje);border-radius:14px;padding:12px 14px}
+.om summary{font:700 18px/1.2 var(--rubrik);cursor:pointer;min-height:32px;display:flex;align-items:center}
+.om h3{font:700 17px/1.2 var(--rubrik);margin:14px 0 4px}
+.om ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px;font-size:15px}
+.om p{font-size:15px}
+.om a{color:#1F5FD6}
+html[data-tema=morkt] .om a{color:#8DB5FF}
+
 /* ADR */
 .adr-falt{display:flex;flex-direction:column;gap:8px;border-left:4px solid #E8590C;padding-left:10px}
 .adr-falt a,.lank{color:#1F5FD6}

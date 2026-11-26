@@ -16,7 +16,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
-<link rel="stylesheet" href="style.css?v=11">
+<link rel="stylesheet" href="style.css?v=12">
 </head>
 <body>
 
@@ -252,7 +252,39 @@
     </fieldset>
 
     <p class="ansvar">Följ alltid skyltningen på plats. Uppgifterna kommer från Trafikverkets vägdatabas NVDB och kan vara fel eller inaktuella. Hinder högre än 4,5 m finns inte med. Tillfälliga hinder (vägarbeten), lokala viktbegränsningar på enskilda broar och tjällossningsrestriktioner finns inte heller med. Uppgifterna om farligt gods kommer från NVDB och omfattar inte alla lokala föreskrifter eller tidsstyrda förbud. Viktberäkningen följer trafikförordningens bruttoviktstabeller (bilaga 1–4) och 4 kap. 12 §, men tar inte hänsyn till särskilda regler för enskilda fordon, alternativa bränslen eller dispenser. Föraren ansvarar alltid för att ekipaget är lagligt.</p>
-    <p class="muted liten-text">Fabler &amp; Fakta Studio · Vägdata © Trafikverket (CC0) · Karta © OpenStreetMap, © CARTO</p>
+    <details class="om" id="omAppen">
+      <summary>Om Fri höjd – varifrån allt kommer</summary>
+      <p>Fri höjd är gjord av <b>Fabler &amp; Fakta Studio</b>, en liten oberoende studio i Västsverige. Appen är ett stöd för förare – den ersätter inte vägmärken, lokala trafikföreskrifter eller förarens eget ansvar.</p>
+
+      <h3>Vägdata</h3>
+      <ul>
+        <li><b>Höjdhinder, bärighetsklass, begränsad bruttovikt, axel- och boggitryck, bredd och längd, framkomlighet, förbud mot trafik, väghinder, miljözoner, farligt gods (inskränkningar och rekommenderade vägar), broar och tunnlar, vägnummer och gatunamn</b> – Trafikverkets Nationella vägdatabas (NVDB), hämtad från Lastkajen. Öppna data, licens CC0.</li>
+        <li id="omDatastatus" class="muted"></li>
+      </ul>
+
+      <h3>Regler som appen räknar med</h3>
+      <ul>
+        <li><b>Bruttovikt per bärighetsklass</b> – trafikförordningen (1998:1276) bilaga 1–4, som de återges i Transportstyrelsens ”Lasta lagligt” (2026).</li>
+        <li><b>Axel-, boggi- och trippelaxeltryck</b> – trafikförordningen 4 kap. 12 §.</li>
+        <li><b>Tunnelrestriktionskoder för farligt gods</b> – ADR, avsnitt 8.6.4.</li>
+        <li><b>Miljözoner</b> – trafikförordningen 4 kap. 22–23 §§.</li>
+      </ul>
+
+      <h3>Karta och teknik</h3>
+      <ul>
+        <li><b>Bakgrundskarta</b> – © OpenStreetMaps bidragsgivare (ODbL). Mörk karta och reservkarta: © CARTO.</li>
+        <li><b>Kartvisning</b> – Leaflet (öppen källkod, BSD-licens).</li>
+        <li><b>Typsnitt</b> – Barlow och Barlow Condensed via Google Fonts (SIL Open Font License).</li>
+      </ul>
+
+      <h3>Kontrollera alltid</h3>
+      <ul>
+        <li>Lokala trafikföreskrifter: <a href="https://www.stfs.se" target="_blank" rel="noopener">Svensk trafikföreskriftssamling (STFS)</a> – www.stfs.se</li>
+        <li>Vägdata på karta: <a href="https://nvdbpakarta.trafikverket.se/map" target="_blank" rel="noopener">NVDB på karta (Trafikverket)</a></li>
+      </ul>
+      <p class="muted liten-text">Inga personuppgifter skickas någonstans. Fordon och inställningar sparas bara i din telefon. Din position används bara i appen för att visa hinder i närheten.</p>
+      <p class="muted liten-text">Kontakt: fablerfakta@proton.me</p>
+    </details>
   </form>
 </dialog>
 
@@ -279,7 +311,7 @@
 </dialog>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-<script src="vikt.js?v=11"></script>
-<script src="app.js?v=11"></script>
+<script src="vikt.js?v=12"></script>
+<script src="app.js?v=12"></script>
 </body>
 </html>
