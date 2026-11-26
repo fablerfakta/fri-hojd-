@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#FFD43B">
+<title>Fri höjd</title>
+<meta name="description" content="Höjdhinder på svenska vägar för lastbilar, enligt Trafikverkets vägdata (NVDB).">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ===== Kartan + listan (vanligt läge) ===== -->
+<div id="app">
+  <header class="top">
+    <div class="brand">FRI HÖJD</div>
+    <button id="btnFordon" class="pill" aria-label="Ändra fordonets höjd">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="7" width="13" height="10"/><path d="M15 10h4l3 3v4h-7"/><circle cx="7" cy="18" r="2"/><circle cx="18" cy="18" r="2"/></svg>
+      <span id="pillHojd">4,10 m</span>
+    </button>
+  </header>
+
+  <div id="exempelBanner" class="banner" hidden>Exempeldata – inga riktiga höjder. Ladda Trafikverkets data under Inställningar.</div>
+
+  <main>
+    <section id="vyKarta" class="vy">
+      <div id="karta" aria-label="Karta över höjdhinder"></div>
+      <button id="btnCentrera" class="fab" aria-label="Centrera på min position">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 4 20l8-4 8 4z"/></svg>
+      </button>
+      <button id="btnKor" class="fab fab-kor">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 12v9M3.5 9.5 12 12l8.5-2.5"/></svg>
+        Körläge
+      </button>
+    </section>
+
+    <section id="vyLista" class="vy" hidden>
+      <div class="listhuvud">
+        <h1 id="listRubrik">Höjdhinder i närheten</h1>
+        <div class="filter" role="group" aria-label="Filter">
+          <button class="chip aktiv" data-filter="alla">Alla</button>
+          <button class="chip" data-filter="problem">För låga och nära gränsen</button>
+        </div>
+        <p id="listInfo" class="muted"></p>
+      </div>
+      <ul id="lista" class="lista"></ul>
+    </section>
+  </main>
+
+  <nav class="flikar" aria-label="Huvudmeny">
+    <button class="flik aktiv" data-vy="karta">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2z"/><path d="M9 4v14M15 6v14"/></svg>Karta
+    </button>
+    <button class="flik" data-vy="lista">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>Lista
+    </button>
+    <button class="flik" data-vy="install">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/></svg>Inställningar
+    </button>
+  </nav>
+</div>
+
+<!-- ===== Hyttläge (körning) ===== -->
+<div id="hytt" hidden>
+  <header class="hytt-top">
+    <div class="hytt-etikett"><span class="prick"></span>FRI HÖJD · KÖRLÄGE</div>
+    <button id="btnStangHytt" class="hytt-knapp" aria-label="Stäng körläge">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+    </button>
+  </header>
+
+  <section id="hyttKort" class="hytt-kort">
+    <div class="rad"><span>HINDER OM</span><span id="hyttDinHojd">DIN HÖJD 4,10 M</span></div>
+    <div id="hyttAvstand" class="jattesiffra">–</div>
+    <div class="matare"><div id="hyttMatare"></div></div>
+    <div class="tva">
+      <div class="ruta"><div class="liten">FRI HÖJD</div><div id="hyttFri" class="stor">–</div></div>
+      <div class="ruta"><div class="liten">MARGINAL</div><div id="hyttMarg" class="stor">–</div></div>
+    </div>
+    <div id="hyttNamn" class="hytt-namn"></div>
+  </section>
+
+  <div id="hyttVarning" class="hytt-varning" hidden>
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2 21h20z"/><path d="M12 10v5M12 18v.5"/></svg>
+    <div id="hyttVarnText"></div>
+  </div>
+
+  <div id="hyttLugn" class="hytt-lugn" hidden>
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg>
+    <div>Inga låga hinder framför dig de närmaste 3 km.</div>
+  </div>
+
+  <button id="btnIgnorera" class="hytt-sekundar">Jag kör inte hit</button>
+
+  <div class="hytt-darefter">
+    <div class="liten">DÄREFTER</div>
+    <div id="hyttDarefter" class="tva"></div>
+  </div>
+  <p id="hyttGps" class="hytt-gps"></p>
+</div>
+
+<!-- ===== Inställningar ===== -->
+<dialog id="dlgInst" class="ark" aria-labelledby="instRubrik">
+  <form method="dialog" id="formInst">
+    <div class="ark-huvud">
+      <h2 id="instRubrik">Inställningar</h2>
+      <button value="stang" class="ikonknapp" aria-label="Stäng">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+    </div>
+
+    <fieldset>
+      <legend>Fordon</legend>
+      <label for="inHojd">Fordonets höjd, inklusive last (meter)</label>
+      <div class="stegare">
+        <button type="button" data-steg="-0.05" aria-label="Minska 5 cm">−</button>
+        <input id="inHojd" type="number" inputmode="decimal" step="0.01" min="1.5" max="5">
+        <button type="button" data-steg="0.05" aria-label="Öka 5 cm">+</button>
+      </div>
+      <label for="inMarg">Varna även när marginalen är mindre än (meter)</label>
+      <input id="inMarg" type="number" inputmode="decimal" step="0.05" min="0" max="1">
+    </fieldset>
+
+    <fieldset>
+      <legend>Körning</legend>
+      <label class="vaxel"><input type="checkbox" id="inAutoKor"> Slå på körläge automatiskt när jag kör</label>
+      <label class="vaxel"><input type="checkbox" id="inRost"> Röstvarning</label>
+      <label for="inTema">Mörkt läge</label>
+      <select id="inTema">
+        <option value="auto">Automatiskt (efter solnedgång)</option>
+        <option value="ljust">Alltid ljust</option>
+        <option value="morkt">Alltid mörkt</option>
+      </select>
+    </fieldset>
+
+    <fieldset>
+      <legend>Data</legend>
+      <p id="dataInfo" class="muted"></p>
+      <label for="inFil" class="knapp-sek">Ladda egen datafil (.json eller .geojson)</label>
+      <input id="inFil" type="file" accept=".json,.geojson,application/json" class="dold">
+      <button type="button" id="btnStandardData" class="knapp-lank">Återställ till appens data</button>
+    </fieldset>
+
+    <p class="ansvar">Följ alltid skyltningen på plats. Uppgifterna kommer från Trafikverkets vägdatabas NVDB och kan vara fel eller inaktuella. Hinder högre än 4,5 m finns inte med. Tillfälliga hinder, som vägarbeten, finns inte heller med.</p>
+    <p class="muted liten-text">Fabler &amp; Fakta Studio · Vägdata © Trafikverket (CC0) · Karta © OpenStreetMap, © CARTO</p>
+  </form>
+</dialog>
+
+<!-- ===== Första start ===== -->
+<dialog id="dlgStart" class="ark" aria-labelledby="startRubrik">
+  <form method="dialog" id="formStart">
+    <h2 id="startRubrik">Hur högt är ditt fordon?</h2>
+    <p class="muted">Ange höjden med last. Appen visar vilka broar och andra hinder du inte kommer under.</p>
+    <div class="stegare stor-stegare">
+      <button type="button" data-steg="-0.05" aria-label="Minska 5 cm">−</button>
+      <input id="inStartHojd" type="number" inputmode="decimal" step="0.01" min="1.5" max="5" value="4.00" aria-label="Fordonets höjd i meter">
+      <button type="button" data-steg="0.05" aria-label="Öka 5 cm">+</button>
+    </div>
+    <p class="ansvar">Följ alltid skyltningen på plats. Datan kan vara fel eller inaktuell, och hinder över 4,5 m finns inte med.</p>
+    <button value="ok" class="knapp-prim">Jag förstår – börja</button>
+  </form>
+</dialog>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<script src="app.js"></script>
+</body>
+</html>
