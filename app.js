@@ -332,13 +332,33 @@ let karta = null, kartlager = null, punktLager = null, etikettLager = null, migM
 const renderer = window.L ? L.canvas({ padding: 0.3 }) : null;
 const FARG = { rod: '#D0021B', gul: '#F2B705', gron: '#1E9E5A' };
 
+/* Bakgrundskartor. Vägkartan (OpenStreetMap) visar alla vägar, vägnummer och gatunamn.
+   Om en kartkälla inte svarar byter appen automatiskt till nästa. */
+const KARTKALLOR = {
+  vag: { url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', opt: { maxZoom: 19 },
+    attr: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' },
+  vagMork: { url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', opt: { maxZoom: 19, subdomains: 'abcd' },
+    attr: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> © <a href="https://carto.com/attributions">CARTO</a>' },
+  reserv: { url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', opt: { maxZoom: 19, subdomains: 'abcd' },
+    attr: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> © <a href="https://carto.com/attributions">CARTO</a>' }
+};
+let kartkallaFel = new Set();
+function valjKartkalla() {
+  const onskad = morkt ? 'vagMork' : 'vag';
+  if (!kartkallaFel.has(onskad)) return onskad;
+  return !kartkallaFel.has('reserv') ? 'reserv' : onskad;
+}
 function bytKartlager() {
   if (kartlager) karta.removeLayer(kartlager);
-  const stil = morkt ? 'dark_all' : 'light_all';
-  kartlager = L.tileLayer(`https://{s}.basemaps.cartocdn.com/${stil}/{z}/{x}/{y}{r}.png`, {
-    maxZoom: 19, subdomains: 'abcd',
-    attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> © <a href="https://carto.com/attributions">CARTO</a> · Vägdata © Trafikverket'
-  }).addTo(karta);
+  const namn = valjKartkalla(), k = KARTKALLOR[namn];
+  let fel = 0, ok = 0;
+  kartlager = L.tileLayer(k.url, { ...k.opt, attribution: k.attr + ' · Vägdata © Trafikverket' });
+  kartlager.on('tileload', () => { ok++; });
+  kartlager.on('tileerror', () => {
+    fel++;
+    if (fel >= 6 && ok === 0 && !kartkallaFel.has(namn)) { kartkallaFel.add(namn); bytKartlager(); }
+  });
+  kartlager.addTo(karta);
 }
 function popupHtml(h) {
   const s = status(h.h);
