@@ -36,6 +36,7 @@
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 18h18M5 18V9l7-4 7 4v9M9 18v-5h6v5"/></svg>Bärighet
         </button>
         <div id="bkLegend" class="bk-legend"></div>
+        <div id="adrLegend" class="bk-legend"></div>
       </div>
       <button id="btnCentrera" class="fab" aria-label="Centrera på min position">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 4 20l8-4 8 4z"/></svg>
@@ -95,6 +96,11 @@
   <div class="hytt-bk">
     <div><div class="liten">VÄGENS BÄRIGHET</div><div id="hyttBk" class="stor">–</div></div>
     <div id="hyttBkText" class="hytt-bk-text"></div>
+  </div>
+
+  <div id="hyttAdrRuta" class="hytt-bk" hidden>
+    <div><div class="liten">FARLIGT GODS</div><div id="hyttAdr" class="stor">ADR</div></div>
+    <div id="hyttAdrText" class="hytt-bk-text"></div>
   </div>
 
   <div id="hyttVarning" class="hytt-varning" hidden>
@@ -182,6 +188,23 @@
       <button type="button" id="btnNyGrupp" class="knapp-sek">+ Lägg till axel eller axelgrupp</button>
       <p id="summaInfo" class="muted liten-text"></p>
 
+      <div class="grupphuvud">Farligt gods (ADR)</div>
+      <label class="vaxel"><input type="checkbox" id="fAdr"> Fordonet kör farligt gods med orangefärgade skyltar</label>
+      <div id="adrFalt" class="adr-falt">
+        <label for="fTunnelkod">Tunnelrestriktionskod för lasten (se transportdokumentet)</label>
+        <select id="fTunnelkod">
+          <option value="B">B</option><option value="B1000C">B1000C</option><option value="B/D">B/D</option><option value="B/E">B/E</option>
+          <option value="C">C</option><option value="C5000D">C5000D</option><option value="C/D">C/D</option><option value="C/E">C/E</option>
+          <option value="D">D</option><option value="D/E">D/E</option><option value="E">E</option><option value="-">– (ingen)</option>
+        </select>
+        <label class="vaxel"><input type="checkbox" id="fTank"> Transport i tank eller bulk</label>
+        <label id="nemRad">Nettoexplosivmassa (kg)<input id="fNem" type="number" inputmode="decimal" step="1" min="0"></label>
+        <p id="adrInfo" class="muted liten-text"></p>
+        <p class="liten-text">Har du flera ämnen ombord gäller den strängaste koden.
+          Kontrollera alltid lokala föreskrifter för farligt gods i
+          <a href="https://www.stfs.se" target="_blank" rel="noopener">Svensk trafikföreskriftssamling (STFS)</a>.</p>
+      </div>
+
       <div class="grupphuvud">Får köra på</div>
       <div id="bkResultat" class="bk-resultat" aria-live="polite"></div>
       <p class="muted liten-text">Allt sparas automatiskt i telefonen.</p>
@@ -210,12 +233,21 @@
       <legend>Data</legend>
       <p id="dataInfo" class="muted"></p>
       <p id="bkDataInfo" class="muted"></p>
-      <label for="inFil" class="knapp-sek">Ladda egen datafil – höjdhinder eller bärighet (.json/.geojson)</label>
+      <p id="adrDataInfo" class="muted"></p>
+      <label for="inFil" class="knapp-sek">Ladda egen datafil – höjdhinder, bärighet eller farligt gods</label>
       <input id="inFil" type="file" accept=".json,.geojson,application/json" class="dold">
       <button type="button" id="btnStandardData" class="knapp-lank">Återställ till appens data</button>
     </fieldset>
 
-    <p class="ansvar">Följ alltid skyltningen på plats. Uppgifterna kommer från Trafikverkets vägdatabas NVDB och kan vara fel eller inaktuella. Hinder högre än 4,5 m finns inte med. Tillfälliga hinder (vägarbeten), lokala viktbegränsningar på enskilda broar och tjällossningsrestriktioner finns inte heller med. Viktberäkningen följer trafikförordningens bruttoviktstabeller (bilaga 1–4) och 4 kap. 12 §, men tar inte hänsyn till särskilda regler för enskilda fordon, alternativa bränslen eller dispenser. Föraren ansvarar alltid för att ekipaget är lagligt.</p>
+    <fieldset>
+      <legend>Kontrollera föreskrifterna</legend>
+      <p class="liten-text">Lokala trafikföreskrifter (förbud, viktgränser, farligt gods, tider) gäller alltid före appen.</p>
+      <a class="knapp-sek lank" href="https://www.stfs.se" target="_blank" rel="noopener">Lokala trafikföreskrifter – STFS (Transportstyrelsen)</a>
+      <a class="knapp-sek lank" href="https://nvdbpakarta.trafikverket.se/map" target="_blank" rel="noopener">NVDB på karta (Trafikverket)</a>
+      <p class="muted liten-text">Adresser: www.stfs.se · nvdbpakarta.trafikverket.se</p>
+    </fieldset>
+
+    <p class="ansvar">Följ alltid skyltningen på plats. Uppgifterna kommer från Trafikverkets vägdatabas NVDB och kan vara fel eller inaktuella. Hinder högre än 4,5 m finns inte med. Tillfälliga hinder (vägarbeten), lokala viktbegränsningar på enskilda broar och tjällossningsrestriktioner finns inte heller med. Uppgifterna om farligt gods kommer från NVDB och omfattar inte alla lokala föreskrifter eller tidsstyrda förbud. Viktberäkningen följer trafikförordningens bruttoviktstabeller (bilaga 1–4) och 4 kap. 12 §, men tar inte hänsyn till särskilda regler för enskilda fordon, alternativa bränslen eller dispenser. Föraren ansvarar alltid för att ekipaget är lagligt.</p>
     <p class="muted liten-text">Fabler &amp; Fakta Studio · Vägdata © Trafikverket (CC0) · Karta © OpenStreetMap, © CARTO</p>
   </form>
 </dialog>

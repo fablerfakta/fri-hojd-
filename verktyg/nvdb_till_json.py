@@ -10,6 +10,12 @@ Användning:
 Vägar med BK1 hoppas över, eftersom allmän väg är BK1 om inget annat sägs.
 Lägg till --alla för att ta med BK1 också.
 
+    python3 nvdb_till_json.py --adr <fil.gpkg eller fil.geojson> [data/adr.json]
+
+--adr gör om NVDB:s företeelser för farligt gods (rekommenderad väg, förbud/inskränkningar
+och tunnelkategori) till data/adr.json. Kategori: R = rekommenderad, B–E = tunnelkategori,
+allmänt förbud mot farligt gods räknas som E. Kontrollera resultatet – attributnamnen kan variera.
+
 - Hämta datan gratis på https://lastkajen.trafikverket.se (skapa konto, välj vägdata
   med företeelsen "Höjdhinder upp till 4,5 meter", format GeoPackage eller GeoJSON).
 - Koordinater i SWEREF 99 TM (EPSG:3006) räknas om till WGS84.
@@ -240,6 +246,75 @@ def main_bk(inn, ut, alla):
     print(f"Klart: {len(segment)} vägsträckor sparade i {ut}", file=sys.stderr)
 
 
+# ---------- Farligt gods ----------
+TUNNELKAT = re.compile(r"tunnel.?kat|kategori", re.I)
+NAMNKOL = re.compile(r"^(namn|name|tunnelnamn|benamning|beskrivning)$", re.I)
+
+
+def adr_kategori(tabell, p):
+    for k, v in p.items():
+        if TUNNELKAT.search(k) and v not in (None, ""):
+            m = re.search(r"\b([B-E])\b", str(v).upper())
+            if m:
+                return m.group(1)
+    if re.search(r"rek", tabell, re.I) or any(re.search(r"rek", str(k), re.I) and v not in (None, "", 0, "0", "Nej") for k, v in p.items()):
+        return "R"
+    return "E"
+
+
+def adr_kalla(sokvag):
+    if sokvag.lower().endswith(".gpkg"):
+        db = sqlite3.connect(sokvag)
+        tabeller = [r[0] for r in db.execute("select table_name from gpkg_contents where data_type='features'")]
+        for tab in [t for t in tabeller if re.search(r"farl|gods|tunnel|adr", t, re.I)] or tabeller:
+            gk = db.execute("select column_name from gpkg_geometry_columns where table_name=?", (tab,)).fetchone()
+            if not gk:
+                continue
+            cur = db.execute(f'select * from "{tab}"')
+            kol = [d[0] for d in cur.description]
+            print(f"  Tabell {tab}", file=sys.stderr)
+            for rad in cur:
+                p = dict(zip(kol, rad))
+                geom = p.pop(gk[0])
+                try:
+                    linjer = gpkg_linjer(geom)
+                except Exception:
+                    linjer = []
+                yield adr_kategori(tab, p), next((str(v) for k, v in p.items() if NAMNKOL.search(k) and v), ""), linjer
+    else:
+        with open(sokvag, encoding="utf-8") as f:
+            fc = json.load(f)
+        for ft in fc.get("features", []):
+            p = ft.get("properties") or {}
+            g = ft.get("geometry") or {}
+            c = g.get("coordinates") or []
+            linjer = [c] if g.get("type") == "LineString" else c if g.get("type") == "MultiLineString" else []
+            yield adr_kategori(sokvag, p), next((str(v) for k, v in p.items() if NAMNKOL.search(k) and v), ""), \
+                [[(pt[0], pt[1]) for pt in l] for l in linjer]
+
+
+def main_adr(inn, ut):
+    rader = []
+    for kat, namn, linjer in adr_kalla(inn):
+        for l in linjer:
+            if len(l) < 2:
+                continue
+            l = forenkla(l, 5.0 if abs(l[0][0]) > 180 else 0.00005)
+            platt = []
+            for x, y in l:
+                lat, lon = till_wgs(x, y)
+                platt += [round(lat, 5), round(lon, 5)]
+            rader.append([kat, platt, namn] if namn else [kat, platt])
+    if not rader:
+        print("Hittade inga sträckor för farligt gods.", file=sys.stderr)
+        sys.exit(2)
+    with open(ut, "w", encoding="utf-8") as f:
+        json.dump({"kalla": "Trafikverket NVDB via Lastkajen (CC0)", "uppdaterad": datetime.date.today().isoformat(),
+                   "exempel": False, "adr": rader}, f, ensure_ascii=False, separators=(",", ":"))
+    from collections import Counter
+    print(f"Klart: {len(rader)} sträckor sparade i {ut} – {dict(Counter(r[0] for r in rader))}", file=sys.stderr)
+
+
 # ---------- GeoJSON ----------
 def forsta_punkt(g):
     t, c = g.get("type"), g.get("coordinates")
@@ -265,6 +340,9 @@ def main():
     arg = [a for a in sys.argv[1:] if not a.startswith("--")]
     if not arg:
         print(__doc__); sys.exit(1)
+    if "--adr" in sys.argv:
+        main_adr(arg[0], arg[1] if len(arg) > 1 else "adr.json")
+        return
     if "--bk" in sys.argv:
         main_bk(arg[0], arg[1] if len(arg) > 1 else "bk.json", "--alla" in sys.argv)
         return

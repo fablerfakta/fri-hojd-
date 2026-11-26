@@ -7,6 +7,7 @@
 const INST_KEY = 'frihojd.inst';
 const DATA_KEY = 'frihojd.egenData';
 const BK_KEY = 'frihojd.egenBk';
+const ADR_KEY = 'frihojd.egenAdr';
 const STANDARD = { marg: 0.2, autoKor: true, rost: true, tema: 'auto', startad: false, visaBk: true, fordon: [], aktivt: null };
 let inst = { ...STANDARD };
 try { inst = { ...STANDARD, ...JSON.parse(localStorage.getItem(INST_KEY) || '{}') }; } catch (e) {}
@@ -17,6 +18,7 @@ function nyttFordon(over = {}) {
   return {
     id: 'f' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
     namn: 'Mitt fordon', reg: '', typ: 'dragbil-pv',
+    adr: false, tunnelkod: 'D/E', tank: true, nem: '',
     hojd: 4.0, bredd: 2.55, langd: 16.5, vikt: 40, tjanst: '', axelavst: 12.5,
     grupper: [
       { typ: 'enkel', driv: false, tryck: 7.5 },
@@ -118,6 +120,10 @@ function arMorkt(plats, nu = new Date()) {
 let data = { hinder: [], exempel: false, kalla: '', uppdaterad: '' };
 let bkData = { segment: [], exempel: false, kalla: '', uppdaterad: '' };
 let bkRutnat = new Map();
+let adrData = { segment: [], exempel: false, kalla: '', uppdaterad: '' };
+let adrRutnat = new Map();
+const STFS_URL = 'https://www.stfs.se';
+const NVDB_KARTA_URL = 'https://nvdbpakarta.trafikverket.se/map';
 const RUTA = 0.02; // grader, för snabb sökning av närmaste vägsträcka
 
 function talEllerNull(v) {
@@ -147,6 +153,17 @@ function tolkaData(json) {
       const fri = talEllerNull(h.h);
       if (fri == null || !Number.isFinite(+h.lat) || !Number.isFinite(+h.lon)) return;
       ut.hinder.push({ id: String(h.id ?? i), lat: +h.lat, lon: +h.lon, h: fri, namn: h.namn || 'Höjdhinder', vag: h.vag || '' });
+    });
+    return ut;
+  }
+  if (Array.isArray(json.adr)) {
+    const ut = { sort: 'adr', segment: [], ...bas };
+    json.adr.forEach((sg, i) => {
+      const kat = String(sg[0] || '').toUpperCase(); const f = sg[1];
+      if (!/^[RBCDE]$/.test(kat) || !Array.isArray(f) || f.length < 4) return;
+      const pts = [];
+      for (let j = 0; j + 1 < f.length; j += 2) pts.push([+f[j], +f[j + 1]]);
+      ut.segment.push({ id: 'a' + i, kat, pts, namn: sg[2] ? String(sg[2]) : '' });
     });
     return ut;
   }
@@ -195,19 +212,21 @@ function tolkaData(json) {
   }
   return { sort: 'okand' };
 }
-function byggRutnat() {
-  bkRutnat = new Map();
-  for (const sg of bkData.segment) {
+function byggRutnat() { bkRutnat = rutnat(bkData.segment); }
+function rutnat(lista) {
+  const karta = new Map();
+  for (const sg of lista) {
     let a = 90, b = 180, c = -90, d = -180;
     for (const [la, lo] of sg.pts) { if (la < a) a = la; if (lo < b) b = lo; if (la > c) c = la; if (lo > d) d = lo; }
     sg.bb = [a, b, c, d];
     for (let i = Math.floor(a / RUTA); i <= Math.floor(c / RUTA); i++)
       for (let j = Math.floor(b / RUTA); j <= Math.floor(d / RUTA); j++) {
         const k = i + ',' + j;
-        if (!bkRutnat.has(k)) bkRutnat.set(k, []);
-        bkRutnat.get(k).push(sg);
+        if (!karta.has(k)) karta.set(k, []);
+        karta.get(k).push(sg);
       }
   }
+  return karta;
 }
 /* Avstånd i meter från en punkt till en vägsträcka (platt approximation, räcker på korta avstånd) */
 function avstTillSegment(p, sg) {
@@ -223,8 +242,8 @@ function avstTillSegment(p, sg) {
   }
   return bast;
 }
-function narmasteSegment(p, maxM) {
-  const lista = bkRutnat.get(Math.floor(p.lat / RUTA) + ',' + Math.floor(p.lon / RUTA)) || [];
+function narmasteSegment(p, maxM, natet = bkRutnat) {
+  const lista = natet.get(Math.floor(p.lat / RUTA) + ',' + Math.floor(p.lon / RUTA)) || [];
   let bast = null, bastD = maxM;
   for (const sg of lista) { const d = avstTillSegment(p, sg); if (d < bastD) { bast = sg; bastD = d; } }
   return bast;
@@ -244,6 +263,44 @@ async function laddaBk() {
   try { if (egen) { const d = tolkaData(JSON.parse(egen)); if (d.sort === 'bk' && d.segment.length) bkData = d; } } catch (e) {}
   if (!bkData.segment.length) { try { const d = tolkaData(await hamta('data/bk.json')); if (d.sort === 'bk') bkData = d; } catch (e) {} }
   byggRutnat();
+}
+async function laddaAdr() {
+  let egen = null;
+  try { egen = localStorage.getItem(ADR_KEY); } catch (e) {}
+  adrData = { segment: [], exempel: false, kalla: '', uppdaterad: '' };
+  try { if (egen) { const d = tolkaData(JSON.parse(egen)); if (d.sort === 'adr' && d.segment.length) adrData = d; } } catch (e) {}
+  if (!adrData.segment.length) { try { const d = tolkaData(await hamta('data/adr.json')); if (d.sort === 'adr') adrData = d; } catch (e) {} }
+  adrRutnat = rutnat(adrData.segment);
+}
+
+/* ---------- Farligt gods (ADR) ----------
+   Tunnelrestriktionskod enligt ADR 8.6.4. Returnerar den lägsta tunnelkategori (B–E) där
+   passage är förbjuden; förbjudet i den kategorin och alla "högre" (B < C < D < E).
+   Restriktionerna gäller bara transportenheter som ska ha orangefärgade skyltar. */
+const KAT_ORDNING = { B: 1, C: 2, D: 3, E: 4 };
+function adrForbudFran(f) {
+  if (!f || !f.adr) return null;
+  const kod = f.tunnelkod || '-', tank = !!f.tank, nem = +f.nem || 0;
+  switch (kod) {
+    case 'B': return 'B';
+    case 'B1000C': return nem > 1000 ? 'B' : 'C';
+    case 'B/D': return tank ? 'B' : 'D';
+    case 'B/E': return tank ? 'B' : 'E';
+    case 'C': return 'C';
+    case 'C5000D': return nem > 5000 ? 'C' : 'D';
+    case 'C/D': return tank ? 'C' : 'D';
+    case 'C/E': return tank ? 'C' : 'E';
+    case 'D': return 'D';
+    case 'D/E': return tank ? 'D' : 'E';
+    case 'E': return 'E';
+    default: return null;
+  }
+}
+/* Är sträckan förbjuden för det aktiva fordonet? kat = 'R' (rekommenderad) eller B–E. */
+function adrForbjuden(kat, f = F()) {
+  const fran = adrForbudFran(f);
+  if (!fran || !KAT_ORDNING[kat]) return false;
+  return KAT_ORDNING[kat] >= KAT_ORDNING[fran];
 }
 
 /* ---------- Läge ---------- */
@@ -267,7 +324,7 @@ function uppdateraTema() {
 }
 
 /* ---------- Karta ---------- */
-let bkLager = null;
+let bkLager = null, adrLager = null;
 let karta = null, kartlager = null, punktLager = null, etikettLager = null, migMarkor = null, forstaFix = true;
 const renderer = window.L ? L.canvas({ padding: 0.3 }) : null;
 const FARG = { rod: '#D0021B', gul: '#F2B705', gron: '#1E9E5A' };
@@ -319,9 +376,10 @@ function startaKarta() {
   L.control.zoom({ position: 'topright' }).addTo(karta);
   bytKartlager();
   bkLager = L.layerGroup().addTo(karta);
+  adrLager = L.layerGroup().addTo(karta);
   punktLager = L.layerGroup().addTo(karta);
   etikettLager = L.layerGroup().addTo(karta);
-  karta.on('moveend', () => { ritaEtiketter(); ritaBk(); if (vy === 'lista') ritaLista(); });
+  karta.on('moveend', () => { ritaEtiketter(); ritaBk(); ritaAdr(); if (vy === 'lista') ritaLista(); });
   ritaPunkter();
 }
 
@@ -363,6 +421,38 @@ function ritaBk() {
     L.polyline(sg.pts, { renderer, color: farg, weight: 5, opacity: 0.8 })
       .bindPopup(`<b>${BK_NAMN(sg.bk)}</b><br>${b && !b[sg.bk].ok ? esc(b[sg.bk].skal.join(' · ')) : 'Ditt ekipage får köra här.'}`)
       .addTo(bkLager);
+  }
+}
+
+/* ---------- Farligt gods på kartan ---------- */
+function adrBeskrivning(sg) {
+  if (sg.kat === 'R') return 'Rekommenderad väg för farligt gods';
+  return sg.kat === 'E' ? 'Förbud mot farligt gods (tunnelkategori E / allmänt förbud)' : `Tunnelkategori ${sg.kat}`;
+}
+function ritaAdr() {
+  if (!karta || !adrLager) return;
+  adrLager.clearLayers();
+  const f = F(), leg = $('adrLegend');
+  if (!f.adr) { leg.innerHTML = ''; return; }
+  if (!adrData.segment.length) { leg.textContent = 'Ingen data om farligt gods laddad.'; return; }
+  const fran = adrForbudFran(f);
+  leg.innerHTML = (fran ? `<i style="background:#E8590C"></i>Förbjudet för din last (kod ${esc(f.tunnelkod)})<br>` : 'Koden ger inga tunnelförbud.<br>')
+    + '<i style="background:#1F5FD6"></i>Rekommenderad väg för farligt gods' + (adrData.exempel ? '<br><b>Exempeldata</b>' : '');
+  if (karta.getZoom() < 8) return;
+  const v = karta.getBounds().pad(0.1);
+  let n = 0;
+  for (const sg of adrData.segment) {
+    const [a, b, c, d] = sg.bb;
+    if (c < v.getSouth() || a > v.getNorth() || d < v.getWest() || b > v.getEast()) continue;
+    const forb = adrForbjuden(sg.kat, f);
+    if (sg.kat !== 'R' && !forb) continue;
+    if (++n > 5000) break;
+    L.polyline(sg.pts, forb
+      ? { renderer, color: '#E8590C', weight: 7, opacity: 0.9, dashArray: '10 8' }
+      : { renderer, color: '#1F5FD6', weight: 4, opacity: 0.6 })
+      .bindPopup(`<b>${esc(sg.namn || adrBeskrivning(sg))}</b><br>${esc(adrBeskrivning(sg))}${forb ? '<br><span class="status s-rod">Förbjudet för din last</span>' : ''}`
+        + `<br><a href="${STFS_URL}" target="_blank" rel="noopener">Se lokala trafikföreskrifter (STFS)</a>`)
+      .addTo(adrLager);
   }
 }
 
@@ -436,6 +526,7 @@ function ritaHytt() {
   if (!hyttAktiv) return;
   $('hyttDinHojd').textContent = `DIN HÖJD ${fmtM(F().hojd)} M`;
   ritaHyttBk();
+  ritaHyttAdr();
   const lista = framfor();
   primar = lista.find((r) => r.s !== 'gron') || null;
   const visad = primar || lista[0] || null;
@@ -502,6 +593,47 @@ function ritaHyttBk() {
     }
   } else $('hyttBkText').textContent = 'Ditt ekipage får köra här.';
 }
+const adrSagda = new Set();
+function ritaHyttAdr() {
+  const f = F(), ruta = $('hyttAdrRuta');
+  ruta.hidden = !f.adr;
+  if (!f.adr) return;
+  ruta.classList.remove('varn');
+  $('hyttAdr').textContent = f.tunnelkod && f.tunnelkod !== '-' ? f.tunnelkod : 'ADR';
+  if (!adrData.segment.length) { $('hyttAdrText').textContent = 'Ingen data om farligt gods laddad.'; return; }
+  if (!pos) { $('hyttAdrText').textContent = 'Väntar på GPS …'; return; }
+  // Förbjuden sträcka där jag är, eller framför mig inom 1,5 km
+  let traff = null, traffD = Infinity;
+  const ci = Math.floor(pos.lat / RUTA), cj = Math.floor(pos.lon / RUTA);
+  const sedda = new Set();
+  for (let i = ci - 1; i <= ci + 1; i++) for (let j = cj - 1; j <= cj + 1; j++) {
+    for (const sg of adrRutnat.get(i + ',' + j) || []) {
+      if (sedda.has(sg)) continue; sedda.add(sg);
+      if (!adrForbjuden(sg.kat, f)) continue;
+      const d = avstTillSegment(pos, sg);
+      if (d > 1500) continue;
+      if (d > 30 && riktningGrad != null) {
+        const ok = sg.pts.some((pt) => vinkelSkillnad(riktning(pos, { lat: pt[0], lon: pt[1] }), riktningGrad) <= KON_GRADER);
+        if (!ok) continue;
+      } else if (d > 30) continue;
+      if (d < traffD) { traff = sg; traffD = d; }
+    }
+  }
+  if (!traff) { $('hyttAdrText').textContent = 'Inga förbud för din last här eller strax framför.'; return; }
+  ruta.classList.add('varn');
+  const namn = traff.namn || adrBeskrivning(traff);
+  $('hyttAdrText').textContent = traffD <= 30
+    ? `Förbjudet för din last här: ${namn}.`
+    : `Förbud om ${fmtAvst(traffD)}: ${namn}. Välj en annan väg.`;
+  if (!adrSagda.has(traff.id)) {
+    adrSagda.add(traff.id);
+    if (navigator.vibrate) navigator.vibrate([300, 150, 300]);
+    if (inst.rost && 'speechSynthesis' in window) {
+      const u = new SpeechSynthesisUtterance(`Varning. Förbud mot farligt gods ${traffD <= 30 ? 'här' : 'om ' + fmtAvst(traffD).replace('km', 'kilometer').replace(' m', ' meter')}. ${namn}.`);
+      u.lang = 'sv-SE'; speechSynthesis.speak(u);
+    }
+  }
+}
 function varnaMedRost(r) {
   const niva = r.d < 300 ? 2 : r.d < 1000 ? 1 : 0;
   if (!niva || (sagda.get(r.h.id) || 0) >= niva) return;
@@ -561,6 +693,11 @@ function dataText() {
   const n = data.hinder.length;
   return `${n.toLocaleString('sv-SE')} höjdhinder${data.kalla ? ' · ' + data.kalla : ''}${data.uppdaterad ? ' · uppdaterad ' + data.uppdaterad : ''}${data.exempel ? ' · EXEMPELDATA' : ''}`;
 }
+function adrDataText() {
+  const n = adrData.segment.length;
+  return n ? `${n.toLocaleString('sv-SE')} sträckor och tunnlar för farligt gods${adrData.kalla ? ' · ' + adrData.kalla : ''}${adrData.uppdaterad ? ' · uppdaterad ' + adrData.uppdaterad : ''}${adrData.exempel ? ' · EXEMPELDATA' : ''}`
+    : 'Ingen data om farligt gods laddad.';
+}
 function bkDataText() {
   const n = bkData.segment.length;
   return n ? `${n.toLocaleString('sv-SE')} vägsträckor med bärighetsklass${bkData.kalla ? ' · ' + bkData.kalla : ''}${bkData.uppdaterad ? ' · uppdaterad ' + bkData.uppdaterad : ''}${bkData.exempel ? ' · EXEMPELDATA' : ''}`
@@ -576,8 +713,23 @@ function fyllFordonsval() {
 const FALT = [
   ['fNamn', 'namn', 'text'], ['fReg', 'reg', 'text'], ['fTyp', 'typ', 'text'],
   ['fHojd', 'hojd', 'hojd'], ['fBredd', 'bredd', 'tal'], ['fLangd', 'langd', 'tal'],
-  ['fVikt', 'vikt', 'tal'], ['fTjanst', 'tjanst', 'tal'], ['fAxelavst', 'axelavst', 'tal']
+  ['fVikt', 'vikt', 'tal'], ['fTjanst', 'tjanst', 'tal'], ['fAxelavst', 'axelavst', 'tal'], ['fNem', 'nem', 'tal']
 ];
+function visaAdr() {
+  const f = F();
+  $('fAdr').checked = !!f.adr;
+  $('adrFalt').hidden = !f.adr;
+  $('fTunnelkod').value = f.tunnelkod || 'D/E';
+  $('fTank').checked = !!f.tank;
+  $('nemRad').hidden = !/^(B1000C|C5000D)$/.test(f.tunnelkod);
+  const fran = adrForbudFran(f);
+  $('adrInfo').textContent = !f.adr ? '' : fran
+    ? `Förbjudet i tunnlar av kategori ${['B', 'C', 'D', 'E'].filter((k) => KAT_ORDNING[k] >= KAT_ORDNING[fran]).join(', ')} och på vägar med förbud mot farligt gods.`
+    : 'Koden ger inga tunnelförbud.';
+}
+$('fAdr').addEventListener('change', (e) => { F().adr = e.target.checked; visaAdr(); adrSagda.clear(); fordonAndrat(false); });
+$('fTunnelkod').addEventListener('change', (e) => { F().tunnelkod = e.target.value; visaAdr(); adrSagda.clear(); fordonAndrat(false); });
+$('fTank').addEventListener('change', (e) => { F().tank = e.target.checked; visaAdr(); adrSagda.clear(); fordonAndrat(false); });
 function visaFordon() {
   const f = F();
   for (const [id, nyckel, sort] of FALT) {
@@ -586,6 +738,7 @@ function visaFordon() {
   }
   ritaGrupper();
   ritaBkResultat();
+  visaAdr();
 }
 function ritaGrupper() {
   const f = F();
@@ -626,6 +779,7 @@ function fordonAndrat(ritaKartan) {
   visaHojd();
   if (ritaKartan) { sagda.clear(); ritaPunkter(); }
   ritaBk();
+  ritaAdr();
   if (vy === 'lista') ritaLista();
   ritaHytt();
 }
@@ -638,12 +792,13 @@ for (const [id, nyckel, sort] of FALT) {
       if (sort === 'hojd') { if (v == null || v < 1.5 || v > 5) return; f.hojd = Math.round(v * 100) / 100; }
       else f[nyckel] = v == null ? '' : v;
     }
+    if (nyckel === 'nem') visaAdr();
     fordonAndrat(sort === 'hojd');
   });
 }
 $('fTyp').addEventListener('change', (e) => { F().typ = e.target.value; fordonAndrat(false); });
 $('valFordon').addEventListener('change', (e) => {
-  inst.aktivt = e.target.value; bkSagda.clear(); $('taBortFraga').hidden = true;
+  inst.aktivt = e.target.value; bkSagda.clear(); adrSagda.clear(); $('taBortFraga').hidden = true;
   visaFordon(); fordonAndrat(true);
 });
 $('btnNyttFordon').addEventListener('click', () => {
@@ -705,9 +860,10 @@ function oppnaInst() {
   $('inTema').value = inst.tema;
   $('dataInfo').textContent = dataText();
   $('bkDataInfo').textContent = bkDataText();
+  $('adrDataInfo').textContent = adrDataText();
   $('dlgInst').showModal();
 }
-function allaRitas() { visaHojd(); ritaPunkter(); ritaBk(); if (vy === 'lista') ritaLista(); ritaHytt(); $('exempelBanner').hidden = !data.exempel && !bkData.exempel; }
+function allaRitas() { visaHojd(); ritaPunkter(); ritaBk(); ritaAdr(); if (vy === 'lista') ritaLista(); ritaHytt(); $('exempelBanner').hidden = !data.exempel && !bkData.exempel && !(F().adr && adrData.exempel); }
 function lasHojd(el) {
   const v = talEllerNull(el.value);
   if (v != null && v >= 1.5 && v <= 5) return Math.round(v * 100) / 100;
@@ -743,7 +899,14 @@ $('inFil').addEventListener('change', (e) => {
           localStorage.setItem(BK_KEY, JSON.stringify({ segment: platt, kalla: bkData.kalla, uppdaterad: bkData.uppdaterad }));
           $('bkDataInfo').textContent = bkDataText();
         } catch (err) { $('bkDataInfo').textContent = bkDataText() + ' (för stor för att sparas – ladda den igen nästa gång)'; }
-      } else { $('dataInfo').textContent = 'Hittade varken höjdhinder eller bärighetsklasser i filen.'; return; }
+      } else if (ny.sort === 'adr' && ny.segment.length) {
+        adrData = ny; adrRutnat = rutnat(adrData.segment);
+        try {
+          const platt = adrData.segment.map((sg) => [sg.kat, sg.pts.flat().map((x) => Math.round(x * 1e5) / 1e5), sg.namn]);
+          localStorage.setItem(ADR_KEY, JSON.stringify({ adr: platt, kalla: adrData.kalla, uppdaterad: adrData.uppdaterad }));
+          $('adrDataInfo').textContent = adrDataText();
+        } catch (err) { $('adrDataInfo').textContent = adrDataText() + ' (för stor för att sparas – ladda den igen nästa gång)'; }
+      } else { $('dataInfo').textContent = 'Hittade varken höjdhinder, bärighet eller farligt gods i filen.'; return; }
       allaRitas();
     } catch (err) { $('dataInfo').textContent = 'Filen kunde inte läsas. Den måste vara JSON eller GeoJSON.'; }
   };
@@ -751,9 +914,9 @@ $('inFil').addEventListener('change', (e) => {
   e.target.value = '';
 });
 $('btnStandardData').addEventListener('click', async () => {
-  try { localStorage.removeItem(DATA_KEY); localStorage.removeItem(BK_KEY); } catch (e) {}
-  await Promise.all([laddaData(), laddaBk()]);
-  $('dataInfo').textContent = dataText(); $('bkDataInfo').textContent = bkDataText(); allaRitas();
+  try { localStorage.removeItem(DATA_KEY); localStorage.removeItem(BK_KEY); localStorage.removeItem(ADR_KEY); } catch (e) {}
+  await Promise.all([laddaData(), laddaBk(), laddaAdr()]);
+  $('dataInfo').textContent = dataText(); $('bkDataInfo').textContent = bkDataText(); $('adrDataInfo').textContent = adrDataText(); allaRitas();
 });
 
 /* ---------- Knappar ---------- */
@@ -780,7 +943,7 @@ document.addEventListener('visibilitychange', async () => {
   uppdateraTema();
   visaHojd();
   startaKarta();
-  await Promise.all([laddaData(), laddaBk()]);
+  await Promise.all([laddaData(), laddaBk(), laddaAdr()]);
   allaRitas();
   if (!inst.startad) {
     const f = F();
