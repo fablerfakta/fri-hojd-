@@ -14,7 +14,7 @@
 <meta name="apple-mobile-web-app-title" content="Fri höjd">
 <link rel="stylesheet" href="lib/fonts/fonts.css">
 <link rel="stylesheet" href="lib/leaflet/leaflet.css">
-<link rel="stylesheet" href="style.css?v=14">
+<link rel="stylesheet" href="style.css?v=15">
 </head>
 <body>
 
@@ -222,6 +222,29 @@
       <legend>Körning</legend>
       <label class="vaxel"><input type="checkbox" id="inAutoKor"> Slå på körläge automatiskt när jag kör</label>
       <label class="vaxel"><input type="checkbox" id="inRost"> Röstvarning</label>
+      <div id="rostFalt" class="rost-falt">
+        <label for="inRostSprak">Språk för röstvarningar</label>
+        <select id="inRostSprak">
+          <option value="sv">Svenska</option>
+          <option value="en">English</option>
+        </select>
+        <div class="grupphuvud">Röst</div>
+        <div class="kon" role="radiogroup" aria-label="Röstens kön">
+          <label class="vaxel"><input type="radio" name="rostKon" value="kvinna"> Kvinnlig</label>
+          <label class="vaxel"><input type="radio" name="rostKon" value="man"> Manlig</label>
+        </div>
+        <label for="inRostVal">Välj en särskild röst (valfritt)</label>
+        <select id="inRostVal"></select>
+        <label for="inPitch">Tonhöjd (pitch): <b id="pitchVarde">1,00</b></label>
+        <input id="inPitch" type="range" min="0.5" max="1.5" step="0.05">
+        <label for="inTakt">Talhastighet: <b id="taktVarde">1,00</b></label>
+        <input id="inTakt" type="range" min="0.7" max="1.4" step="0.05">
+        <div class="fordonknappar" style="grid-template-columns:repeat(2,minmax(0,1fr))">
+          <button type="button" id="btnTestaRost" class="knapp-sek">Testa rösten</button>
+          <button type="button" id="btnAterstallRost" class="knapp-sek">Återställ</button>
+        </div>
+        <p id="rostInfo" class="muted liten-text"></p>
+      </div>
       <label class="vaxel"><input type="checkbox" id="inVisaBk"> Visa bärighet på kartan (kan också slås av och på direkt på kartan)</label>
       <label for="inTema">Mörkt läge</label>
       <select id="inTema">
@@ -310,7 +333,7 @@
 </dialog>
 
 <script src="lib/leaflet/leaflet.js"></script>
-<script src="vikt.js?v=14"></script>
-<script src="app.js?v=14"></script>
+<script src="vikt.js?v=15"></script>
+<script src="app.js?v=15"></script>
 </body>
 </html>

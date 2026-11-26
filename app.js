@@ -628,8 +628,7 @@ function ritaHyttBk() {
       bkSagda.add(sg.id);
       if (navigator.vibrate) navigator.vibrate([300, 150, 300]);
       if (inst.rost && 'speechSynthesis' in window) {
-        const u = new SpeechSynthesisUtterance(`Varning. Du kör på en väg med bärighetsklass ${sg.bk}. Ekipaget är för tungt.`);
-        u.lang = 'sv-SE'; speechSynthesis.speak(u);
+        tala(T().bk(sg.bk), false);
       }
     }
   } else $('hyttBkText').textContent = 'Ditt ekipage får köra här.';
@@ -670,8 +669,7 @@ function ritaHyttAdr() {
     adrSagda.add(traff.id);
     if (navigator.vibrate) navigator.vibrate([300, 150, 300]);
     if (inst.rost && 'speechSynthesis' in window) {
-      const u = new SpeechSynthesisUtterance(`Varning. Förbud mot farligt gods ${traffD <= 30 ? 'här' : 'om ' + fmtAvst(traffD).replace('km', 'kilometer').replace(' m', ' meter')}. ${namn}.`);
-      u.lang = 'sv-SE'; speechSynthesis.speak(u);
+      tala(T().adr(traffD <= 30 ? T().har : T().om(traffD), namn), false);
     }
   }
 }
@@ -681,13 +679,68 @@ function varnaMedRost(r) {
   sagda.set(r.h.id, niva);
   if (r.s === 'rod' && navigator.vibrate) navigator.vibrate([300, 150, 300]);
   if (!inst.rost || !('speechSynthesis' in window)) return;
-  const avst = niva === 2 ? 'strax framför dig' : `om ${fmtAvst(r.d).replace('km', 'kilometer').replace(' m', ' meter')}`;
-  const text = r.s === 'rod'
-    ? `Varning. Lågt hinder ${avst}. Fri höjd ${fmtM(r.h.h)} meter. Du får inte plats.`
-    : `Höjdhinder ${avst}. Fri höjd ${fmtM(r.h.h)} meter. Liten marginal.`;
+  const avst = niva === 2 ? T().nara : T().om(r.d);
+  tala(r.s === 'rod' ? T().hojdRod(avst, talHojd(r.h.h)) : T().hojdGul(avst, talHojd(r.h.h)));
+}
+
+/* ---------- Röst ----------
+   Webbläsarens talsyntes. Vilka röster som finns beror på telefonen. Kön går sällan att läsa ut
+   ur rösten, så "manlig"/"kvinnlig" väljer en röst som verkar passa och justerar annars tonhöjden. */
+const ROST_STANDARD = { sprak: 'sv', kon: 'kvinna', rostNamn: '', pitch: 1, takt: 1 };
+inst.rostInst = { ...ROST_STANDARD, ...(inst.rostInst || {}) };
+const KVINNA = /female|woman|kvinn|frau|femme|\b(alva|astrid|klara|sara|elin|hedvig|ingrid|karen|samantha|serena|tessa|moira|fiona|victoria|allison|ava|susan|zira|hazel|kate|libby|sonia|amy|emma|olivia)\b|-f\d|#female/i;
+const MAN = /\bmale\b|\bman\b|mann|homme|\b(oskar|erik|anders|mattias|daniel|alex|tom|fred|oliver|arthur|george|ryan|thomas|david|mark|james|aaron|rishi|gordon|lee)\b|-m\d|#male/i;
+let roster = [];
+function laddaRoster() {
+  if (!('speechSynthesis' in window)) return;
+  roster = speechSynthesis.getVoices();
+  if ($('inRostVal') && $('dlgInst').open) fyllRostval();
+}
+if ('speechSynthesis' in window) { laddaRoster(); speechSynthesis.onvoiceschanged = laddaRoster; }
+const rostKon = (v) => KVINNA.test(v.name) ? 'kvinna' : MAN.test(v.name) ? 'man' : '';
+function rosterForSprak(sprak) { return roster.filter((v) => (v.lang || '').toLowerCase().startsWith(sprak)); }
+function valjRost() {
+  const ri = inst.rostInst;
+  const lista = rosterForSprak(ri.sprak);
+  if (ri.rostNamn) { const v = lista.find((x) => x.name === ri.rostNamn); if (v) return { v, simulera: false }; }
+  const kon = lista.find((v) => rostKon(v) === ri.kon);
+  if (kon) return { v: kon, simulera: false };
+  const forval = lista.find((v) => v.localService) || lista[0] || null;
+  // Ingen röst av rätt kön hittades: simulera med tonhöjden om rösten verkar vara av motsatt kön eller okänd
+  return { v: forval, simulera: !forval || rostKon(forval) !== ri.kon };
+}
+const TEXTER = {
+  sv: {
+    nara: 'strax framför dig', om: (d) => 'om ' + (d < 1000 ? `${Math.max(10, Math.round(d / 10) * 10)} meter` : `${(d / 1000).toFixed(d < 10000 ? 1 : 0).replace('.', ',')} kilometer`),
+    hojdRod: (avst, h) => `Varning. Lågt hinder ${avst}. Fri höjd ${h} meter. Du får inte plats.`,
+    hojdGul: (avst, h) => `Höjdhinder ${avst}. Fri höjd ${h} meter. Liten marginal.`,
+    bk: (bk) => `Varning. Du kör på en väg med bärighetsklass ${bk}. Ekipaget är för tungt.`,
+    adr: (avst, namn) => `Varning. Förbud mot farligt gods ${avst}. ${namn}.`,
+    har: 'här', test: 'Det här är rösten i Fri höjd. Låg bro om 800 meter. Fri höjd 3,6 meter.'
+  },
+  en: {
+    nara: 'just ahead', om: (d) => 'in ' + (d < 1000 ? `${Math.max(10, Math.round(d / 10) * 10)} metres` : `${(d / 1000).toFixed(d < 10000 ? 1 : 0)} kilometres`),
+    hojdRod: (avst, h) => `Warning. Low clearance ${avst}. Clearance ${h} metres. Your vehicle will not fit.`,
+    hojdGul: (avst, h) => `Height restriction ${avst}. Clearance ${h} metres. Small margin.`,
+    bk: (bk) => `Warning. You are on a road with load class ${bk}. Your vehicle is too heavy.`,
+    adr: (avst, namn) => `Warning. Dangerous goods restriction ${avst}. ${namn}.`,
+    har: 'here', test: 'This is the Fri höjd voice. Low bridge in 800 metres. Clearance 3.6 metres.'
+  }
+};
+const T = () => TEXTER[inst.rostInst.sprak] || TEXTER.sv;
+const talHojd = (h) => inst.rostInst.sprak === 'en' ? Number(h).toFixed(1) : fmtM(h, 1);
+function tala(text, avbryt = true) {
+  if (!('speechSynthesis' in window)) return;
+  const ri = inst.rostInst, { v, simulera } = valjRost();
   const u = new SpeechSynthesisUtterance(text);
-  u.lang = 'sv-SE';
-  speechSynthesis.cancel(); speechSynthesis.speak(u);
+  u.lang = ri.sprak === 'en' ? 'en-GB' : 'sv-SE';
+  if (v) { u.voice = v; u.lang = v.lang; }
+  let pitch = +ri.pitch || 1;
+  if (simulera) pitch *= ri.kon === 'man' ? 0.75 : 1.2;
+  u.pitch = Math.max(0, Math.min(2, pitch));
+  u.rate = Math.max(0.5, Math.min(2, +ri.takt || 1));
+  if (avbryt) speechSynthesis.cancel();
+  speechSynthesis.speak(u);
 }
 
 /* ---------- GPS ---------- */
@@ -897,6 +950,7 @@ function oppnaInst() {
   $('inMarg').value = inst.marg.toFixed(2);
   $('inAutoKor').checked = inst.autoKor;
   $('inRost').checked = inst.rost;
+  visaRostInst();
   $('inVisaBk').checked = inst.lager.bk;
   $('inTema').value = inst.tema;
   $('dataInfo').textContent = dataText();
@@ -914,7 +968,33 @@ function lasHojd(el) {
 }
 $('inMarg').addEventListener('input', (e) => { const v = talEllerNull(e.target.value); if (v != null && v >= 0 && v <= 1) { inst.marg = v; sparaInst(); allaRitas(); } });
 $('inAutoKor').addEventListener('change', (e) => { inst.autoKor = e.target.checked; sparaInst(); });
-$('inRost').addEventListener('change', (e) => { inst.rost = e.target.checked; sparaInst(); });
+$('inRost').addEventListener('change', (e) => { inst.rost = e.target.checked; sparaInst(); visaRostInst(); });
+function fyllRostval() {
+  const ri = inst.rostInst, lista = rosterForSprak(ri.sprak);
+  const etikett = (v) => { const k = rostKon(v); return v.name + (k === 'kvinna' ? ' – kvinnlig' : k === 'man' ? ' – manlig' : ''); };
+  $('inRostVal').innerHTML = '<option value="">Automatiskt (efter valt kön)</option>'
+    + lista.map((v) => `<option value="${esc(v.name)}"${v.name === ri.rostNamn ? ' selected' : ''}>${esc(etikett(v))}</option>`).join('');
+  const antal = lista.length;
+  $('rostInfo').textContent = !('speechSynthesis' in window) ? 'Telefonen har ingen talsyntes.'
+    : antal ? `${antal} ${ri.sprak === 'en' ? 'engelska' : 'svenska'} röster finns i telefonen. Finns ingen röst av valt kön görs rösten ljusare eller mörkare.`
+    : `Ingen ${ri.sprak === 'en' ? 'engelsk' : 'svensk'} röst hittades. Installera den under telefonens inställningar för talsyntes (text till tal).`;
+}
+function visaRostInst() {
+  const ri = inst.rostInst;
+  $('rostFalt').hidden = !inst.rost;
+  $('inRostSprak').value = ri.sprak;
+  document.querySelectorAll('input[name=rostKon]').forEach((r) => { r.checked = r.value === ri.kon; });
+  $('inPitch').value = ri.pitch; $('pitchVarde').textContent = Number(ri.pitch).toFixed(2).replace('.', ',');
+  $('inTakt').value = ri.takt; $('taktVarde').textContent = Number(ri.takt).toFixed(2).replace('.', ',');
+  fyllRostval();
+}
+$('inRostSprak').addEventListener('change', (e) => { inst.rostInst.sprak = e.target.value; inst.rostInst.rostNamn = ''; sparaInst(); fyllRostval(); });
+document.querySelectorAll('input[name=rostKon]').forEach((r) => r.addEventListener('change', () => { inst.rostInst.kon = r.value; inst.rostInst.rostNamn = ''; sparaInst(); fyllRostval(); }));
+$('inRostVal').addEventListener('change', (e) => { inst.rostInst.rostNamn = e.target.value; sparaInst(); });
+$('inPitch').addEventListener('input', (e) => { inst.rostInst.pitch = +e.target.value; $('pitchVarde').textContent = Number(e.target.value).toFixed(2).replace('.', ','); sparaInst(); });
+$('inTakt').addEventListener('input', (e) => { inst.rostInst.takt = +e.target.value; $('taktVarde').textContent = Number(e.target.value).toFixed(2).replace('.', ','); sparaInst(); });
+$('btnTestaRost').addEventListener('click', () => tala(T().test));
+$('btnAterstallRost').addEventListener('click', () => { inst.rostInst = { ...ROST_STANDARD }; sparaInst(); visaRostInst(); });
 $('inVisaBk').addEventListener('change', (e) => { inst.lager.bk = e.target.checked; sparaInst(); ritaLagerknappar(); ritaBk(); });
 $('inTema').addEventListener('change', (e) => { inst.tema = e.target.value; sparaInst(); uppdateraTema(); });
 document.querySelectorAll('.stegare button').forEach((b) => b.addEventListener('click', () => {
