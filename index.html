@@ -14,7 +14,7 @@
 <meta name="apple-mobile-web-app-title" content="Fri höjd">
 <link rel="stylesheet" href="lib/fonts/fonts.css">
 <link rel="stylesheet" href="lib/leaflet/leaflet.css">
-<link rel="stylesheet" href="style.css?v=15">
+<link rel="stylesheet" href="style.css?v=16">
 </head>
 <body>
 
@@ -134,8 +134,9 @@
       </button>
     </div>
 
-    <fieldset id="fsFordon">
-      <legend>Fordon</legend>
+    <details class="sektion" id="sekFordon" name="inst">
+      <summary><span class="sek-ikon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 7h13v10H2zM15 10h4l3 3v4h-7"/><circle cx="7" cy="18" r="2"/><circle cx="18" cy="18" r="2"/></svg></span><span class="sek-text"><b>Mina fordon</b><small>Mått, vikt, axlar och ADR</small></span><svg class="pil" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></summary>
+      <div class="sek-inneh">
       <label for="valFordon">Aktivt fordon</label>
       <div class="fordonval">
         <select id="valFordon"></select>
@@ -210,17 +211,19 @@
       <div class="grupphuvud">Får köra på</div>
       <div id="bkResultat" class="bk-resultat" aria-live="polite"></div>
       <p class="muted liten-text">Allt sparas automatiskt i telefonen.</p>
-    </fieldset>
-
-    <fieldset>
-      <legend>Varningar</legend>
+      </div>
+    </details>
+    <details class="sektion" id="sekVarn" name="inst">
+      <summary><span class="sek-ikon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2 21h20z"/><path d="M12 10v5M12 18v.5"/></svg></span><span class="sek-text"><b>Varningar</b><small>Höjdmarginal och automatiskt körläge</small></span><svg class="pil" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></summary>
+      <div class="sek-inneh">
       <label for="inMarg">Varna även när höjdmarginalen är mindre än (meter)</label>
       <input id="inMarg" type="number" inputmode="decimal" step="0.05" min="0" max="1">
-    </fieldset>
-
-    <fieldset>
-      <legend>Körning</legend>
       <label class="vaxel"><input type="checkbox" id="inAutoKor"> Slå på körläge automatiskt när jag kör</label>
+      </div>
+    </details>
+    <details class="sektion" id="sekRost" name="inst">
+      <summary><span class="sek-ikon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16 9a4 4 0 0 1 0 6M19 6a8 8 0 0 1 0 12"/></svg></span><span class="sek-text"><b>Röst</b><small>Språk, röst, tonhöjd och hastighet</small></span><svg class="pil" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></summary>
+      <div class="sek-inneh">
       <label class="vaxel"><input type="checkbox" id="inRost"> Röstvarning</label>
       <div id="rostFalt" class="rost-falt">
         <label for="inRostSprak">Språk för röstvarningar</label>
@@ -245,6 +248,11 @@
         </div>
         <p id="rostInfo" class="muted liten-text"></p>
       </div>
+      </div>
+    </details>
+    <details class="sektion" id="sekKarta" name="inst">
+      <summary><span class="sek-ikon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2z"/><path d="M9 4v14M15 6v14"/></svg></span><span class="sek-text"><b>Karta</b><small>Lager och mörkt läge</small></span><svg class="pil" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></summary>
+      <div class="sek-inneh">
       <label class="vaxel"><input type="checkbox" id="inVisaBk"> Visa bärighet på kartan (kan också slås av och på direkt på kartan)</label>
       <label for="inTema">Mörkt läge</label>
       <select id="inTema">
@@ -252,29 +260,31 @@
         <option value="ljust">Alltid ljust</option>
         <option value="morkt">Alltid mörkt</option>
       </select>
-    </fieldset>
-
-    <fieldset>
-      <legend>Data</legend>
+      </div>
+    </details>
+    <details class="sektion" id="sekData" name="inst">
+      <summary><span class="sek-ikon"><svg viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/></svg></span><span class="sek-text"><b>Data</b><small>Vägdata och egna filer</small></span><svg class="pil" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></summary>
+      <div class="sek-inneh">
       <p id="dataInfo" class="muted"></p>
       <p id="bkDataInfo" class="muted"></p>
       <p id="adrDataInfo" class="muted"></p>
       <label for="inFil" class="knapp-sek">Ladda egen datafil – höjdhinder, bärighet eller farligt gods</label>
       <input id="inFil" type="file" accept=".json,.geojson,application/json" class="dold">
       <button type="button" id="btnStandardData" class="knapp-lank">Återställ till appens data</button>
-    </fieldset>
-
-    <fieldset>
-      <legend>Kontrollera föreskrifterna</legend>
+      </div>
+    </details>
+    <details class="sektion" id="sekFore" name="inst">
+      <summary><span class="sek-ikon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h9l5 5v15H6z"/><path d="M14 2v6h6M9 13h8M9 17h8"/></svg></span><span class="sek-text"><b>Föreskrifter</b><small>Lokala trafikföreskrifter och NVDB</small></span><svg class="pil" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></summary>
+      <div class="sek-inneh">
       <p class="liten-text">Lokala trafikföreskrifter (förbud, viktgränser, farligt gods, tider) gäller alltid före appen.</p>
       <a class="knapp-sek lank" href="https://www.stfs.se" target="_blank" rel="noopener">Lokala trafikföreskrifter – STFS (Transportstyrelsen)</a>
       <a class="knapp-sek lank" href="https://nvdbpakarta.trafikverket.se/map" target="_blank" rel="noopener">NVDB på karta (Trafikverket)</a>
       <p class="muted liten-text">Adresser: www.stfs.se · nvdbpakarta.trafikverket.se</p>
-    </fieldset>
-
-    <p class="ansvar">Följ alltid skyltningen på plats. Uppgifterna kommer från Trafikverkets vägdatabas NVDB och kan vara fel eller inaktuella. Hinder högre än 4,5 m finns inte med. Tillfälliga hinder (vägarbeten), lokala viktbegränsningar på enskilda broar och tjällossningsrestriktioner finns inte heller med. Uppgifterna om farligt gods kommer från NVDB och omfattar inte alla lokala föreskrifter eller tidsstyrda förbud. Viktberäkningen följer trafikförordningens bruttoviktstabeller (bilaga 1–4) och 4 kap. 12 §, men tar inte hänsyn till särskilda regler för enskilda fordon, alternativa bränslen eller dispenser. Föraren ansvarar alltid för att ekipaget är lagligt.</p>
-    <details class="om" id="omAppen">
-      <summary>Om Fri höjd – varifrån allt kommer</summary>
+      </div>
+    </details>
+    <details class="sektion" id="sekOm" name="inst">
+      <summary><span class="sek-ikon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></svg></span><span class="sek-text"><b>Om appen</b><small>Källor, licenser och integritet</small></span><svg class="pil" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></summary>
+      <div class="sek-inneh">
       <p>Fri höjd är gjord av <a href="https://fablerfakta.github.io" target="_blank" rel="noopener"><b>Fabler &amp; Fakta Studio</b></a>, en liten oberoende studio i Västsverige. Appen är ett stöd för förare – den ersätter inte vägmärken, lokala trafikföreskrifter eller förarens eget ansvar.</p>
 
       <h3>Vägdata</h3>
@@ -306,7 +316,10 @@
       <p class="muted liten-text">Inga personuppgifter skickas till oss. Fordon och inställningar sparas bara i din telefon, och din position används bara i appen. Kartbilderna hämtas från OpenStreetMap och CARTO.</p>
       <p><a href="integritet.html" target="_blank" rel="noopener">Integritetspolicy / Privacy policy</a></p>
       <p class="muted liten-text">Kontakt: fablerfakta@proton.me · <a href="https://fablerfakta.github.io" target="_blank" rel="noopener">fablerfakta.github.io</a></p>
+      </div>
     </details>
+    <p class="ansvar">Följ alltid skyltningen på plats. Uppgifterna kommer från Trafikverkets vägdatabas NVDB och kan vara fel eller inaktuella. Hinder högre än 4,5 m finns inte med. Tillfälliga hinder (vägarbeten), lokala viktbegränsningar på enskilda broar och tjällossningsrestriktioner finns inte heller med. Uppgifterna om farligt gods kommer från NVDB och omfattar inte alla lokala föreskrifter eller tidsstyrda förbud. Viktberäkningen följer trafikförordningens bruttoviktstabeller (bilaga 1–4) och 4 kap. 12 §, men tar inte hänsyn till särskilda regler för enskilda fordon, alternativa bränslen eller dispenser. Föraren ansvarar alltid för att ekipaget är lagligt.</p>
+
   </form>
 </dialog>
 
@@ -333,7 +346,7 @@
 </dialog>
 
 <script src="lib/leaflet/leaflet.js"></script>
-<script src="vikt.js?v=15"></script>
-<script src="app.js?v=15"></script>
+<script src="vikt.js?v=16"></script>
+<script src="app.js?v=16"></script>
 </body>
 </html>

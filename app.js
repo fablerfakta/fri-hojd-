@@ -1043,6 +1043,9 @@ $('btnStandardData').addEventListener('click', async () => {
 });
 
 /* ---------- Knappar ---------- */
+document.querySelectorAll('.sektion').forEach((d) => d.addEventListener('toggle', () => {
+  if (d.open) document.querySelectorAll('.sektion').forEach((x) => { if (x !== d) x.open = false; });
+}));
 $('dlgInst').addEventListener('close', () => {
   markeraFlik();
 });
@@ -1053,7 +1056,7 @@ document.querySelectorAll('.chip').forEach((c) => c.addEventListener('click', ()
   document.querySelectorAll('.chip').forEach((x) => x.classList.toggle('aktiv', x === c));
   ritaLista();
 }));
-$('btnFordon').addEventListener('click', oppnaInst);
+$('btnFordon').addEventListener('click', () => { oppnaInst(); $('sekFordon').open = true; });
 function vaxlaLager(nyckel) { inst.lager[nyckel] = !inst.lager[nyckel]; sparaInst(); ritaLagerknappar(); ritaPunkter(); ritaBk(); ritaAdr(); }
 $('btnLagerHojd').addEventListener('click', () => vaxlaLager('hojd'));
 $('btnLagerBk').addEventListener('click', () => vaxlaLager('bk'));
